@@ -409,6 +409,11 @@ void blurb(Telnet *telnet, const char *line)
    telnet->session->next = sessions;
    sessions = telnet->session;
 
+   // Print welcome banner and do a /who list.
+   telnet->output("\n\nWelcome to Phoenix.  Type \"/help\" for a list of "
+                  "commands.\n\n");
+   who_cmd(telnet);
+
    // Set normal input routine.
    telnet->SetInputFunction(process_input);
 }
