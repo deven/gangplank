@@ -359,7 +359,12 @@ void Telnet::Prompt(const char *p)	// Print and set new prompt.
 
 Telnet::~Telnet()
 {
-   delete session;			// Free session structure.
+   if (session->telnet) {
+      session->telnet = NULL;		// Detach associated session.
+      log_message("Detach: %s (%s) on fd #%d.", session->name_only,
+                  session->user->user, fd);
+   }
+
    delete data;				// Free input line buffer.
 
    if (fd != -1) {			// Check if there is an open connection.
