@@ -113,9 +113,6 @@ public:
    // Send public message to everyone.
    void SendEveryone(const char *msg);
 
-   // Send private message by fd #.
-   void SendByFD(int fd, const char *msg);
-
    // Send private message by partial name match.
    void SendPrivate(const char *sendlist, const char *msg);
 
