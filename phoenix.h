@@ -1,15 +1,15 @@
 // -*- C++ -*-
 //
-// Conferencing system server.
+// Phoenix conferencing system server.
 //
-// conf.h -- General header file.
+// phoenix.h -- General header file.
 //
 // Copyright (c) 1992-1993 Deven T. Corzine
 //
 
 // Check if previously included.
-#ifndef _CONF_H
-#define _CONF_H 1
+#ifndef _PHOENIX_H
+#define _PHOENIX_H 1
 
 // Include files.
 extern "C" {
@@ -36,12 +36,12 @@ extern "C" {
 
 // Location of server binary.
 #ifndef SERVER_PATH
-#define SERVER_PATH "/usr/local/bin/conf"
+#define SERVER_PATH "/usr/local/sbin/phoenixd"
 #endif
 
 // Home directory for server to run in.
 #ifndef HOME
-#define HOME "/usr/local/lib/conf"
+#define HOME "/usr/local/lib/phoenix"
 #endif
 
 // For compatibility.
@@ -127,4 +127,4 @@ extern fd_set readfds;			// read fdset for select()
 extern fd_set writefds;			// write fdset for select()
 extern FILE *logfile;			// log file
 
-#endif // conf.h
+#endif // phoenix.h

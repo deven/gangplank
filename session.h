@@ -1,6 +1,6 @@
 // -*- C++ -*-
 //
-// Conferencing system server.
+// Phoenix conferencing system server.
 //
 // session.h -- Session class interface.
 //
@@ -12,7 +12,7 @@
 #define _SESSION_H 1
 
 // Include files.
-#include "conf.h"
+#include "phoenix.h"
 
 // Data about a particular session.
 class Session {

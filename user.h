@@ -1,6 +1,6 @@
 // -*- C++ -*-
 //
-// Conferencing system server.
+// Phoenix conferencing system server.
 //
 // user.h -- User class interface.
 //
@@ -12,7 +12,7 @@
 #define _USER_H 1
 
 // Include files.
-#include "conf.h"
+#include "phoenix.h"
 
 // Data about a particular user.
 class User {

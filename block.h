@@ -1,6 +1,6 @@
 // -*- C++ -*-
 //
-// Conferencing system server.
+// Phoenix conferencing system server.
 //
 // block.h -- Block class interface.
 //
@@ -12,7 +12,7 @@
 #define _BLOCK_H 1
 
 // Include files.
-#include "conf.h"
+#include "phoenix.h"
 
 // Block in a data buffer.
 class Block {

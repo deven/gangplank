@@ -1,8 +1,8 @@
 # -*- Makefile -*-
 #
-# Conferencing system server.
+# Phoenix conferencing system server.
 #
-# Makefile -- commands for building conf server.
+# Makefile -- commands for building Phoenix server.
 #
 # Copyright (c) 1992-1993 Deven T. Corzine
 #
@@ -20,10 +20,10 @@ LDFLAGS =
 #CFLAGS = -g -DNEED_STRERROR
 #LDFLAGS =
 
-EXEC = conf
-HDRS = block.h conf.h fd.h fdtable.h line.h listen.h outbuf.h session.h \
+EXEC = phoenixd
+HDRS = block.h fd.h fdtable.h line.h listen.h outbuf.h phoenix.h session.h \
 	telnet.h user.h
-SRCS = conf.cc fdtable.cc listen.cc session.cc telnet.cc user.cc
+SRCS = fdtable.cc listen.cc phoenix.cc session.cc telnet.cc user.cc
 OBJS = $(SRCS:.cc=.o)
 
 EXEC2 = restart

@@ -1,6 +1,6 @@
 // -*- C++ -*-
 //
-// Conferencing system server.
+// Phoenix conferencing system server.
 //
 // user.cc -- User class implementation.
 //
@@ -8,7 +8,7 @@
 //
 
 // Include files.
-#include "conf.h"
+#include "phoenix.h"
 #include "user.h"
 
 User::User(Session *s)

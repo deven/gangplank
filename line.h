@@ -1,6 +1,6 @@
 // -*- C++ -*-
 //
-// Conferencing system server.
+// Phoenix conferencing system server.
 //
 // line.h -- Line class interface.
 //
@@ -12,7 +12,7 @@
 #define _LINE_H 1
 
 // Include files.
-#include "conf.h"
+#include "phoenix.h"
 
 // Single input lines waiting to be processed.
 class Line {

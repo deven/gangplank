@@ -1,6 +1,6 @@
 // -*- C++ -*-
 //
-// Conferencing system server.
+// Phoenix conferencing system server.
 //
 // fdtable.cc -- FDTable class implementation.
 //
@@ -8,9 +8,9 @@
 //
 
 // Include files.
-#include "conf.h"
 #include "fdtable.h"
 #include "listen.h"
+#include "phoenix.h"
 #include "session.h"
 #include "telnet.h"
 #include "user.h"

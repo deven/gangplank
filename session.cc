@@ -1,6 +1,6 @@
 // -*- C++ -*-
 //
-// Conferencing system server.
+// Phoenix conferencing system server.
 //
 // session.cc -- Session class implementation.
 //
@@ -8,7 +8,7 @@
 //
 
 // Include files.
-#include "conf.h"
+#include "phoenix.h"
 #include "session.h"
 #include "telnet.h"
 #include "user.h"
@@ -50,7 +50,7 @@ Session::~Session()
 
    // Notify and log exit if session found.
    if (found) {
-      notify("*** %s has left conf! [%s] ***\n", name, date(0, 11, 5));
+      notify("*** %s has left Phoenix! [%s] ***\n", name, date(0, 11, 5));
       log_message("Exit: %s (%s) on fd #%d.", name, user->user, telnet->fd);
    }
 

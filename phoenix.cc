@@ -1,16 +1,16 @@
 // -*- C++ -*-
 //
-// Conferencing system server.
+// Phoenix conferencing system server.
 //
-// conf.cc -- main server code.
+// phoenix.cc -- main server code.
 //
 // Copyright (c) 1992-1993 Deven T. Corzine
 //
 
 // Include files.
 #include "block.h"
-#include "conf.h"
 #include "fdtable.h"
+#include "phoenix.h"
 #include "session.h"
 #include "telnet.h"
 #include "user.h"
@@ -232,7 +232,7 @@ void welcome(Telnet *telnet)
    if (telnet->echo == TelnetWillWont) return;
 
    // send welcome banner
-   telnet->output("\nWelcome to conf!\n\n");
+   telnet->output("\nWelcome to Phoenix!\n\n");
 
    // Announce guest account.
    telnet->output("A \"guest\" account is available.\n\n");
@@ -352,7 +352,7 @@ void name(Telnet *telnet, const char *line)
    sessions = telnet->session;
 
    // Announce entry.
-   notify("*** %s has entered conf! [%s] ***\n", telnet->session->name,
+   notify("*** %s has entered Phoenix! [%s] ***\n", telnet->session->name,
           date(time(&telnet->session->login_time), 11, 5));
    telnet->session->idle_since = telnet->session->login_time;
    log_message("Enter: %s (%s) on fd #%d.", telnet->session->name,
@@ -376,7 +376,7 @@ void process_input(Telnet *telnet, const char *line)
             log_message("Immediate shutdown requested by %s (%s).",
                 telnet->session->name, telnet->session->user->user);
             log_message("Final shutdown warning.");
-            fdtable.announce("*** %s has shut down conf! ***\n",
+            fdtable.announce("*** %s has shut down Phoenix! ***\n",
                              telnet->session->name);
             fdtable.announce("%c%c>>> Server shutting down NOW!  Goodbye. <<<\n"
                              "%c%c", Bell, Bell, Bell, Bell);
@@ -399,7 +399,7 @@ void process_input(Telnet *telnet, const char *line)
             if (sscanf(line + 5, "%d", &i) != 1) i = 30;
             log_message("Shutdown requested by %s (%s) in %d seconds.",
                         telnet->session->name, telnet->session->user->user, i);
-            fdtable.announce("*** %s has shut down conf! ***\n",
+            fdtable.announce("*** %s has shut down Phoenix! ***\n",
                              telnet->session->name);
             fdtable.announce("%c%c>>> This server will shutdown in %d "
                              "seconds... <<<\n%c%c", Bell, Bell, i, Bell, Bell);
@@ -420,7 +420,7 @@ void process_input(Telnet *telnet, const char *line)
       }
    } else if (*line == '/') {
       if (!strncmp(line, "/bye", 4)) {
-         // Exit conf.
+         // Exit Phoenix.
          if (telnet->Output.head) {
             // Queued output, try to send it first.
             telnet->blocked = false;
@@ -470,7 +470,7 @@ void process_input(Telnet *telnet, const char *line)
          // help?  ha!
          telnet->output("Help?  Help?!?  This program isn't done, you know.\n"
                         "\nOnly known commands:\n\n"
-                        "/bye -- leave conf\n"
+                        "/bye -- leave Phoenix\n"
                         "/date -- display current date and time\n"
                         "/send -- specify default sendlist\n"
                         "/who -- gives trivial list of who is connected\n"

@@ -1,6 +1,6 @@
 // -*- C++ -*-
 //
-// Conferencing system server.
+// Phoenix conferencing system server.
 //
 // fdtable.h -- FDTable class interface.
 //
@@ -12,7 +12,7 @@
 #define _FDTABLE_H 1
 
 // Include files.
-#include "conf.h"
+#include "phoenix.h"
 
 // File descriptor table.
 class FDTable {

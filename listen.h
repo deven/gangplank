@@ -1,6 +1,6 @@
 // -*- C++ -*-
 //
-// Conferencing system server.
+// Phoenix conferencing system server.
 //
 // listen.h -- Listen class interface.
 //
@@ -12,9 +12,9 @@
 #define _LISTEN_H 1
 
 // Include files.
-#include "conf.h"
 #include "fd.h"
 #include "fdtable.h"
+#include "phoenix.h"
 
 // Listening socket (subclass of FD).
 class Listen: public FD {

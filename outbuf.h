@@ -1,6 +1,6 @@
 // -*- C++ -*-
 //
-// Conferencing system server.
+// Phoenix conferencing system server.
 //
 // outbuf.h -- OutputBuffer class interface.
 //
@@ -13,7 +13,7 @@
 
 // Include files.
 #include "block.h"
-#include "conf.h"
+#include "phoenix.h"
 
 // Output buffer consisting of linked list of output blocks.
 class OutputBuffer {

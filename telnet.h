@@ -1,6 +1,6 @@
 // -*- C++ -*-
 //
-// Conferencing system server.
+// Phoenix conferencing system server.
 //
 // telnet.h -- Telnet class interface.
 //
@@ -12,10 +12,10 @@
 #define _TELNET_H 1
 
 // Include files.
-#include "conf.h"
 #include "fd.h"
 #include "fdtable.h"
 #include "outbuf.h"
+#include "phoenix.h"
 
 // Telnet commands.
 enum TelnetCommand {

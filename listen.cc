@@ -1,6 +1,6 @@
 // -*- C++ -*-
 //
-// Conferencing system server.
+// Phoenix conferencing system server.
 //
 // listen.cc -- Listen class implementation.
 //
@@ -8,9 +8,9 @@
 //
 
 // Include files.
-#include "conf.h"
 #include "fdtable.h"
 #include "listen.h"
+#include "phoenix.h"
 #include "telnet.h"
 
 Listen::Listen(int port)		// Listen on a port.

@@ -1,6 +1,6 @@
 // -*- C++ -*-
 //
-// Conferencing system server.
+// Phoenix conferencing system server.
 //
 // fd.h -- FD class interface.
 //
@@ -12,7 +12,7 @@
 #define _FD_H 1
 
 // Include files.
-#include "conf.h"
+#include "phoenix.h"
 
 // Types of FD subclasses.
 enum FDType {UnknownFD, ListenFD, TelnetFD};
