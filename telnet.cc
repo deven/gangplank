@@ -547,7 +547,7 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
             delete data;
             data = tmp;
          }
-         n = *((unsigned const char *) from);
+         n = *((unsigned const char *) from++);
          switch (state) {
          case TelnetIAC:
             switch (n) {
@@ -615,7 +615,6 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
                state = 0;
                break;
             }
-            from++;		// Next input character.
             break;
          case TelnetWill:
          case TelnetWont:
@@ -657,7 +656,6 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
                break;
             }
             state = 0;
-            from++;			// Next input character.
             break;
          case TelnetDo:
          case TelnetDont:
@@ -720,15 +718,14 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
                break;
             }
             state = 0;
-            from++;			// Next input character.
             break;
          case Return:
             // Throw away next character.
             state = 0;
-            from++;			// Next input character.
             break;
          default:			// Normal data.
             state = 0;
+            from--;			// Backup to current input character.
             while (!state && from < from_end && free < end) {
                switch (n = *((unsigned char *) from++)) {
                case TelnetIAC:
