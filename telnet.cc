@@ -435,6 +435,21 @@ inline void Telnet::erase_line()	// Erase input line.
    kill_line();
 }
 
+inline void Telnet::previous_line()	// Go to previous input line.
+{
+   output(Bell);			// not implemented yet.
+}
+
+inline void Telnet::next_line()		// Go to next input line.
+{
+   output(Bell);			// not implemented yet.
+}
+
+inline void Telnet::yank()		// Yank from kill-ring.
+{
+   output(Bell);			// not implemented yet.
+}
+
 inline void Telnet::accept_input()	// Accept input line.
 {
    *free = 0;				// Make input line null-terminated.
@@ -807,10 +822,6 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
                case ControlF:
                   forward_char();
                   break;
-               case Backspace:
-               case Delete:
-                  erase_char();
-                  break;
                case ControlK:
                   kill_line();
                   break;
@@ -818,8 +829,21 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
                   UndrawInput();
                   RedrawInput();
                   break;
+               case ControlN:
+                  next_line();
+                  break;
+               case ControlP:
+                  previous_line();
+                  break;
                case ControlT:
                   transpose_chars();
+                  break;
+               case ControlY:
+                  yank();
+                  break;
+               case Backspace:
+               case Delete:
+                  erase_char();
                   break;
                case Return:
                   state = Return;

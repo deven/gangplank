@@ -129,6 +129,9 @@ public:
    void end_of_line();			// Jump to end of line.
    void kill_line();			// Kill from point to end of line.
    void erase_line();			// Erase input line.
+   void previous_line();		// Jump to previous line.
+   void next_line();			// Jump to next line.
+   void yank();				// Yank from kill-ring.
    void accept_input();			// Accept input line.
    void insert_char(int ch);		// Insert character at point.
    void forward_char();			// Move point forward one character.
