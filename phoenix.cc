@@ -575,14 +575,15 @@ void process_input(Telnet *telnet, const char *line)
          if (*start) {
             for (const char *p = start; *p; p++) if (!isspace(*p)) end = p;
             if (strncmp(start, "off", end - start + 1)) {
-               if ((*start == '[' && *end == ']') ||
-                   (*start == '\"' && *end == '\"')) start++; else end++;
+               if ((*start == '\"' && *end == '\"' && start < end) ||
+                   (*start == '[' && *end == ']')) start++; else end++;
                if (end - start < len) len = end - start;
                strncpy(telnet->session->blurb, start, len);
                telnet->session->blurb[len] = 0;
                sprintf(telnet->session->name, "%s [%s]",
                        telnet->session->name_only, telnet->session->blurb);
-               telnet->print("Your blurb has been set to [%s].\n",
+               telnet->print("Your blurb has been %s to [%s].\n",
+                             end - start > len ? "truncated" : "set",
                              telnet->session->blurb);
             } else {
                if (telnet->session->blurb[0]) {
