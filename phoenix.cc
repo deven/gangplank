@@ -283,6 +283,7 @@ void login(Telnet *telnet, const char *line)
       FILE *pw = fopen("passwd", "r");
       if (pw) {
          while (fgets(buf, 256, pw)) {
+            if (buf[0] == '#') continue;
             p = user = buf;
             passwd = name = priv = 0;
             while (*p) if (*p == ':') { *p++ = 0; passwd = p; break; } else p++;
@@ -325,8 +326,9 @@ void password(Telnet *telnet, const char *line)
    // Send newline.
    telnet->output(Newline);
 
-   // Check against hardcoded password.
-   if (strcmp(line, telnet->session->user->password)) {
+   // Check against encrypted password.
+   char *password = telnet->session->user->password;
+   if (strcmp(crypt(line, password), password)) {
       // Login incorrect.
       telnet->output("Login incorrect.\n");
       telnet->Prompt("login: ");
