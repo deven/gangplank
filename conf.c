@@ -1663,7 +1663,9 @@ int main(int argc, char **argv)		/* main program */
    int found;				/* number of file descriptors found */
    int lfd;				/* listening file descriptor */
    int pid;				/* server process number */
+   int errors;				/* number of consecutive errors */
 
+   errors = 0;
    shutdown_flag = 0;
    connections = NULL;
    sessions = NULL;
@@ -1721,10 +1723,15 @@ int main(int argc, char **argv)		/* main program */
       wfds = writefds;
       found = select(nfds, &rfds, &wfds, NULL, NULL);
 
-      /* Abort if select fails, unless just interrupted. */
+      /* If select fails, warn for up to 30 seconds before aborting. */
       if (found == -1) {
          if (errno == EINTR) continue;
-         error("select");
+         if (++errors >= 30) error("select");
+         warn("select");
+         sleep(1);
+         continue;
+      } else {
+         errors = 0;
       }
 
       /* Check for a new connection to accept. */
