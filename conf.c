@@ -39,6 +39,22 @@ const char *date(time_t clock, int start, int len) /* get part of date string */
    return buf + start;			/* return (sub)string */
 }
 
+void open_log()				/* open log file */
+{
+   time_t t;
+   struct tm *tm;
+
+   time(&t);
+   if (!(tm = localtime(&t))) error("localtime");
+   sprintf(buf, "logs/%02d%02d%02d-%02d%02d%02d", tm->tm_year, tm->tm_mon + 1,
+           tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+   if (!(logfile = fopen(buf, "a"))) error(buf);
+   setlinebuf(logfile);
+   unlink("log");
+   symlink(buf, "log");
+   fprintf(stderr, "Logging on \"%s\".\n", buf);
+}
+
 void log_message(const char *format, ...) /* log message */
 {
    va_list ap;
@@ -1552,8 +1568,7 @@ int main(int argc, char **argv)		/* main program */
    connections = NULL;
    sessions = NULL;
    free_blocks = NULL;
-   if (!(logfile = fopen("log", "a"))) error("log");
-   setlinebuf(logfile);
+   open_log();
    nfds = getdtablesize();
    lfd = listen_on(PORT, BACKLOG);
    FD_ZERO(&readfds);

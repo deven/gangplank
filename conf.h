@@ -164,6 +164,7 @@ struct user {
 
 /* Function prototypes. */
 const char *date(time_t clock, int start, int len);
+void open_log();
 void log_message(const char *format, ...);
 void warn(const char *format, ...);
 void error(const char *format, ...);
