@@ -15,10 +15,6 @@
 #include "telnet.h"
 #include "user.h"
 
-static char buf[BufSize];		// XXX temporary buffer
-
-static char inbuf[BufSize];		// XXX input buffer
-
 // Formatted write to all connections.
 void Telnet::announce(const char *format, ...)
 {
@@ -152,6 +148,7 @@ void Telnet::output(const char *buf, int len) // queue output data (with length)
 
 void Telnet::print(const char *format, ...) // formatted write
 {
+   char buf[BufSize];
    va_list ap;
 
    va_start(ap, format);
@@ -201,6 +198,7 @@ void Telnet::OutputWithRedraw(const char *buf) // queue output w/redraw
 
 void Telnet::PrintWithRedraw(const char *format, ...) // format output w/redraw
 {
+   char buf[BufSize];
    va_list ap;
 
    UndrawInput();
@@ -603,11 +601,12 @@ inline void Telnet::transpose_chars()	// Exchange two characters at point.
 
 void Telnet::InputReady(int fd)		// Telnet stream can input data.
 {
+   char buf[BufSize];
    Block *block;
    register const char *from, *from_end;
    register int n;
 
-   n = read(fd, inbuf, BufSize);
+   n = read(fd, buf, BufSize);
    switch (n) {
    case -1:
       switch (errno) {
@@ -628,8 +627,8 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
       delete this;
       break;
    default:
-      from = inbuf;
-      from_end = inbuf + n;
+      from = buf;
+      from_end = buf + n;
       while (from < from_end) {
          // Make sure there's room for more in the buffer.
          if (free >= end) {

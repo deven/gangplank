@@ -24,13 +24,10 @@ FILE *logfile;				// log file
 
 // XXX Should logfile use non-blocking code instead?
 
-// Static variables.
-static char buf[BufSize];		// temporary buffer
-
 #ifdef NEED_STRERROR
 const char *strerror(int err)
 {
-   static char msg[32];
+   static char msg[BufSize];
 
    if (err >= 0 && err < sys_nerr) {
       return sys_errlist[err];
@@ -44,7 +41,7 @@ const char *strerror(int err)
 // XXX class Date?
 const char *date(time_t clock, int start, int len) // get part of date string
 {
-   static char buf[32];
+   static char buf[BufSize];
 
    if (!clock) time(&clock);		// get time if not passed
    strcpy(buf, ctime(&clock));		// make a copy of date string
@@ -58,6 +55,7 @@ const char *date(time_t clock, int start, int len) // get part of date string
 // XXX class Log?
 void OpenLog()				// open log file
 {
+   char buf[BufSize];
    time_t t;
    struct tm *tm;
 
@@ -75,6 +73,7 @@ void OpenLog()				// open log file
 // XXX Use << operator instead of printf() formats?
 void log_message(const char *format, ...) // log message
 {
+   char buf[BufSize];
    va_list ap;
 
    if (!logfile) return;
@@ -86,6 +85,7 @@ void log_message(const char *format, ...) // log message
 
 void warn(const char *format, ...)	// print error message
 {
+   char buf[BufSize];
    va_list ap;
 
    va_start(ap, format);
@@ -98,6 +98,7 @@ void warn(const char *format, ...)	// print error message
 
 void error(const char *format, ...)	// print error message and exit
 {
+   char buf[BufSize];
    va_list ap;
 
    va_start(ap, format);
@@ -112,6 +113,7 @@ void error(const char *format, ...)	// print error message and exit
 
 void notify(const char *format, ...)	// formatted write to all sessions
 {
+   char buf[BufSize];
    Session *session;
    va_list ap;
 
