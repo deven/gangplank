@@ -1,7 +1,7 @@
 /*
  * Conferencing system server.
  *
- * conf.c -- main server code.
+ * conf.cc -- main server code.
  *
  * Copyright (c) 1992-1993 Deven T. Corzine
  *

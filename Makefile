@@ -7,6 +7,7 @@
 #
 
 CC = gcc -Wall -Werror
+CXX = g++ -Wall -Werror
 CFLAGS = -g
 LDFLAGS =
 
@@ -20,8 +21,8 @@ LDFLAGS =
 
 EXEC = conf
 HDRS = conf.h
-SRCS = conf.c
-OBJS = $(SRCS:.c=.o)
+SRCS = conf.cc
+OBJS = $(SRCS:.cc=.o)
 
 EXEC2 = restart
 HDRS2 =
@@ -31,7 +32,7 @@ OBJS2 = $(SRCS2:.c=.o)
 all: $(EXEC) $(EXEC2)
 
 $(EXEC): $(OBJS)
-	$(CC) $(LDFLAGS) -o $(EXEC) $(OBJS)
+	$(CXX) $(LDFLAGS) -o $(EXEC) $(OBJS)
 
 $(EXEC2): $(OBJS2)
 	$(CC) $(LDFLAGS) -o $(EXEC2) $(OBJS2)
@@ -42,6 +43,9 @@ $(OBJS2): $(HDRS2)
 
 .c.o:
 	$(CC) $(CFLAGS) -c $<
+
+.cc.o:
+	$(CXX) $(CFLAGS) -c $<
 
 clean:
 	rm -f $(EXEC) $(OBJS) $(EXEC2) $(OBJS2) core *~
