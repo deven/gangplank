@@ -890,6 +890,8 @@ void new_connection(int lfd)		/* accept a new connection */
 {
    struct telnet *telnet;		/* new telnet data structure */
    struct user *user;			/* new user data structure */
+   struct sockaddr_in saddr;		/* for getpeername() */
+   socklen_t saddrlen;			/* for getpeername() */
    int fd;				/* new file descriptor */
    int flags;				/* file status flags from fcntl() */
    time_t now;				/* current time */
@@ -900,6 +902,15 @@ void new_connection(int lfd)		/* accept a new connection */
       /* Accept failed, just return to select() loop. */
       warn("accept");
       return;
+   }
+
+   /* Log calling host and port. */
+   saddrlen = sizeof(saddr);
+   if (!getpeername(fd, (struct sockaddr *) &saddr, &saddrlen)) {
+      log_message("Accepted connection on fd %d from %s port %d.", fd,
+                  inet_ntoa(saddr.sin_addr), saddr.sin_port);
+   } else {
+      warn("getpeername");
    }
 
    /* Place in non-blocking mode. */

@@ -12,6 +12,7 @@
 #define _CONF_H 1
 
 /* Include files. */
+#include <arpa/inet.h>
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
