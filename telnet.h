@@ -86,9 +86,6 @@ public:
    CallbackFuncPtr LSGA_callback;	// SUPPRESS-GO-AHEAD callback (local)
    CallbackFuncPtr RSGA_callback;	// SUPPRESS-GO-AHEAD callback (remote)
 
-   // Nuke a user (force close connection).
-   static void nuke(Telnet *telnet, int fd, bool drain);
-
    Telnet(int lfd);			// constructor
    ~Telnet();				// destructor
    void Closed();			// Connection is closed.
@@ -107,7 +104,6 @@ public:
    int EndLine() { return (Start() + End()) / width; } // end of input line
    int EndColumn() { return (Start() + End()) % width; } // end of input column
    void Close(bool drain = true);	// Close telnet connection.
-   void nuke(Telnet *telnet, bool drain); // force close connection
    void output(int byte);		// queue output byte
    void output(const char *buf);	// queue output data
    void output(const char *buf, int len); // queue output data (with length)

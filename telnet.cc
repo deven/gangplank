@@ -15,11 +15,6 @@
 #include "telnet.h"
 #include "user.h"
 
-void Telnet::nuke(Telnet *telnet, int fd, bool drain)
-{
-   fdtable.nuke(telnet, fd, drain);
-}
-
 void Telnet::LogCaller()		// Log calling host and port.
 {
    struct sockaddr_in saddr;
@@ -380,14 +375,6 @@ void Telnet::Closed()			// Connection is closed.
    NoReadSelect();			// Don't select closed connections!
    NoWriteSelect();
    fd = -1;				// Connection is closed.
-}
-
-// Nuke a user (force close connection).
-void Telnet::nuke(Telnet *telnet, bool drain)
-{
-   telnet->print("User \"%s\" (%s) on fd #%d has been nuked.\n",
-                 session->name_only, session->user->user, fd);
-   Close(drain);
 }
 
 void Telnet::UndrawInput()		// Erase input line from screen.

@@ -127,20 +127,3 @@ void FDTable::OutputReady(int fd)	// Output ready on file descriptor fd.
    }
    array[fd]->OutputReady(fd);
 }
-
-// Nuke a user (force close connection).
-void FDTable::nuke(Telnet *telnet, int fd, bool drain)
-{
-   if (fd >= 0 && fd < used && array[fd] && array[fd]->type == TelnetFD) {
-      Telnet *t = (Telnet *) (FD *) array[fd];
-      t->UndrawInput();
-      t->print("\a\a\a*** You have been nuked by %s. ***\n",
-               telnet->session->name);
-      log_message("%s (%s) on fd #%d has been nuked by %s (%s).",
-                  t->session->name, t->session->user->user, fd,
-                  telnet->session->name, telnet->session->user->user);
-      t->nuke(telnet, drain);
-   } else {
-      telnet->print("There is no user on fd #%d.\n", fd);
-   }
-}
