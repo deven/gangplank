@@ -168,8 +168,7 @@ void Session::SendEveryone(const char *msg)
 
    switch (sent) {
    case 0:
-      telnet->print("%c%cThere is no one else here! (message not sent)\n",
-                    Bell, Bell);
+      telnet->print("\a\aThere is no one else here! (message not sent)\n");
       break;
    case 1:
       ResetIdle(10);			// reset idle time
@@ -200,8 +199,7 @@ void Session::SendByFD(int fd, const char *sendlist, int is_explicit,
          return;
       }
    }
-   telnet->print("%c%cThere is no user on fd #%d. (message not sent)\n",
-                 Bell, Bell, fd);
+   telnet->print("\a\aThere is no user on fd #%d. (message not sent)\n", fd);
 }
 
 // Send private message by partial name match.
@@ -236,8 +234,8 @@ void Session::SendPrivate(const char *sendlist, int is_explicit,
       for (unsigned char *p = (unsigned char *) sendlist; *p; p++) {
          if (*p == UnquotedUnderscore) *p = Underscore;
       }
-      telnet->print("%c%cNo names matched \"%s\". (message not sent)\n", Bell,
-                    Bell, sendlist);
+      telnet->print("\a\aNo names matched \"%s\". (message not sent)\n",
+                    sendlist);
       break;
    case 1:				// Found single match, send message.
       ResetIdle(10);			// reset idle time
@@ -245,8 +243,8 @@ void Session::SendPrivate(const char *sendlist, int is_explicit,
       dest->telnet->PrintMessage(Private, name, name_only, NULL, msg);
       break;
    default:				// Multiple matches.
-      telnet->print("%c%c\"%s\" matches %d names, including \"%s\" and \"%s\""
-                    ". (message not sent)\n", Bell, Bell, sendlist, matches,
+      telnet->print("\a\a\"%s\" matches %d names, including \"%s\" and \"%s\""
+                    ". (message not sent)\n", sendlist, matches,
                     dest->name_only, session->name_only);
       break;
    }

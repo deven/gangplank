@@ -294,7 +294,7 @@ void login(Telnet *telnet, const char *line)
    telnet->do_echo = false;
 
    // Warn if echo wasn't turned off.
-   if (!telnet->echo) telnet->print("\n%cSorry, password WILL echo.\n\n", Bell);
+   if (!telnet->echo) telnet->print("\n\aSorry, password WILL echo.\n\n");
 
    // Prompt for password.
    telnet->Prompt("Password: ");
@@ -420,8 +420,8 @@ void process_input(Telnet *telnet, const char *line)
             log_message("Final shutdown warning.");
             Telnet::announce("*** %s has shut down Phoenix! ***\n",
                              telnet->session->name);
-            Telnet::announce("%c%c>>> Server shutting down NOW!  Goodbye. <<<\n"
-                             "%c%c", Bell, Bell, Bell, Bell);
+            Telnet::announce("\a\a>>> Server shutting down NOW!  Goodbye. <<<"
+                             "\n\a\a");
             alarm(5);
             Shutdown = 2;
          } else if (!strcasecmp(line, "!down cancel")) {
@@ -445,8 +445,8 @@ void process_input(Telnet *telnet, const char *line)
                         telnet->session->user->user, i);
             Telnet::announce("*** %s has shut down Phoenix! ***\n",
                              telnet->session->name);
-            Telnet::announce("%c%c>>> This server will shutdown in %d "
-                             "seconds... <<<\n%c%c", Bell, Bell, i, Bell, Bell);
+            Telnet::announce("\a\a>>> This server will shutdown in %d seconds"
+                             "... <<<\n\a\a", i);
             alarm(i);
             Shutdown = 1;
          }
@@ -635,8 +635,8 @@ void process_input(Telnet *telnet, const char *line)
          if (*telnet->session->last_sendlist) {
             strcpy(sendlist, telnet->session->last_sendlist);
          } else {
-            telnet->print("%c%cYou have no previous sendlist. (message not "
-                          "sent)\n", Bell, Bell);
+            telnet->print("\a\aYou have no previous sendlist. (message not "
+                          "sent)\n");
             return;
          }
       }
@@ -645,8 +645,8 @@ void process_input(Telnet *telnet, const char *line)
          if (*telnet->session->default_sendlist) {
             strcpy(sendlist, telnet->session->default_sendlist);
          } else {
-            telnet->print("%c%cYou have no default sendlist. (message not "
-                          "sent)\n", Bell, Bell);
+            telnet->print("\a\aYou have no default sendlist. (message not "
+                          "sent)\n");
             return;
          }
       }
@@ -664,8 +664,8 @@ void process_input(Telnet *telnet, const char *line)
 void quit(int sig)			// received SIGQUIT or SIGTERM
 {
    log_message("Shutdown requested by signal in 30 seconds.");
-   Telnet::announce("%c%c>>> This server will shutdown in 30 seconds... <<<"
-                    "\n%c%c", Bell, Bell, Bell, Bell);
+   Telnet::announce("\a\a>>> This server will shutdown in 30 seconds... <<<"
+                    "\n\a\a");
    alarm(30);
    Shutdown = 1;
 }
@@ -676,8 +676,8 @@ void alrm(int sig)			// received SIGALRM
    if (Shutdown) {
       if (Shutdown == 1) {
          log_message("Final shutdown warning.");
-         Telnet::announce("%c%c>>> Server shutting down NOW!  Goodbye. <<<"
-                          "\n%c%c", Bell, Bell, Bell, Bell);
+         Telnet::announce("\a\a>>> Server shutting down NOW!  Goodbye. <<<"
+                          "\n\a\a");
          alarm(5);
          Shutdown++;
       } else {

@@ -654,9 +654,8 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
 
                // Initiate shutdown.
                log_message("Shutdown requested by new server in 30 seconds.");
-               announce("%c%c>>> A new server is starting.  This server will "
-                        "shutdown in 30 seconds... <<<\n%c%c", Bell, Bell,
-                        Bell, Bell);
+               announce("\a\a>>> A new server is starting.  This server will "
+                        "shutdown in 30 seconds... <<<\n\a\a");
                alarm(30);
                Shutdown = 1;
                break;

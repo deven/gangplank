@@ -148,7 +148,7 @@ void FDTable::nuke(Telnet *telnet, int fd, int drain)
    if (fd >= 0 && fd < used && (t = (Telnet *) array[fd]) &&
        t->type == TelnetFD) {
       t->UndrawInput();
-      t->print("%c%c%c*** You have been nuked by %s. ***\n", Bell, Bell, Bell,
+      t->print("\a\a\a*** You have been nuked by %s. ***\n",
                telnet->session->name);
       log_message("%s (%s) on fd #%d has been nuked by %s (%s).",
                   t->session->name, t->session->user->user, fd,
