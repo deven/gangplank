@@ -74,9 +74,6 @@ const int Port = 6789;			// TCP port to run on
 #define true (1)
 #endif
 
-// Types of messages.
-enum MessageType {Public, Private};
-
 // Character codes.
 enum Char {
    Null, ControlA, ControlB, ControlC, ControlD, ControlE, ControlF, ControlG,
@@ -102,10 +99,10 @@ class Telnet;
 class User;
 
 // Input function pointer type.
-typedef void (*InputFuncPtr)(Telnet *telnet, const char *line);
+typedef void (Session::*InputFuncPtr)(const char *line);
 
 // Callback function pointer type.
-typedef void (*CallbackFuncPtr)(Telnet *telnet);
+typedef void (Telnet::*CallbackFuncPtr)();
 
 // Function prototypes.
 const char *date(time_t clock, int start, int len);
@@ -114,15 +111,8 @@ void log_message(const char *format, ...);
 void warn(const char *format, ...);
 void error(const char *format, ...);
 const char *message_start(const char *line, char *sendlist, int len,
-                          int *is_explicit);
+                          bool &is_explicit);
 int match_name(const char *name, const char *sendlist);
-void welcome(Telnet *telnet);
-void login(Telnet *telnet, const char *line);
-void password(Telnet *telnet, const char *line);
-void name(Telnet *telnet, const char *line);
-void blurb(Telnet *telnet, const char *line);
-void process_input(Telnet *telnet, const char *line);
-void erase_line(Telnet *telnet);
 void quit(int sig);
 void alrm(int sig);
 int main(int argc, char **argv);

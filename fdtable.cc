@@ -10,6 +10,10 @@
 // Include files.
 #include "fdtable.h"
 #include "listen.h"
+#include "name.h"
+#include "outbuf.h"
+#include "output.h"
+#include "outstr.h"
 #include "phoenix.h"
 #include "session.h"
 #include "telnet.h"
@@ -135,13 +139,15 @@ void FDTable::announce(const char *buf)
 
    for (int i = 0; i < used; i++) {
       if ((t = (Telnet *) array[i]) && t->type == TelnetFD) {
-         t->OutputWithRedraw(buf);
+         t->UndrawInput();
+         t->output(buf);
+         t->RedrawInput();
       }
    }
 }
 
 // Nuke a user (force close connection).
-void FDTable::nuke(Telnet *telnet, int fd, int drain)
+void FDTable::nuke(Telnet *telnet, int fd, bool drain)
 {
    Telnet *t;
 

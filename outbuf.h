@@ -34,8 +34,28 @@ public:
       }
       tail = NULL;
    }
-   int out(int byte) {			// Output one byte.
-      int select;
+   char *GetData() {			// Save buffer in string and erase.
+      int len = 0;
+      Block *block;
+      for (block = head; block; block = block->next) {
+         len += block->free - block->data;
+      }
+      if (!len) return NULL;
+      char *buf = new char[++len];
+      char *p;
+      for (p = buf; head; p += len) {
+         block = head;
+         head = block->next;
+         len = block->free - block->data;
+         strncpy(p, block->data, len);
+         delete block;
+      }
+      tail = NULL;
+      *p = 0;
+      return buf;
+   }
+   bool out(int byte) {			// Output one byte.
+      bool select;
 
       if ((select = !tail)) {
          head = tail = new Block;
@@ -46,8 +66,8 @@ public:
       *tail->free++ = byte;
       return select;
    }
-   int out(int byte1, int byte2) {	// Output two bytes.
-      int select;
+   bool out(int byte1, int byte2) {	// Output two bytes.
+      bool select;
 
       if ((select = !tail)) {
          head = tail = new Block;
@@ -59,8 +79,8 @@ public:
       *tail->free++ = byte2;
       return select;
    }
-   int out(int byte1, int byte2, int byte3) { // Output three bytes.
-      int select;
+   bool out(int byte1, int byte2, int byte3) { // Output three bytes.
+      bool select;
 
       if ((select = !tail)) {
          head = tail = new Block;

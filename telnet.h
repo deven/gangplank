@@ -15,6 +15,7 @@
 #include "fd.h"
 #include "fdtable.h"
 #include "outbuf.h"
+#include "output.h"
 #include "phoenix.h"
 
 // Telnet commands.
@@ -68,21 +69,18 @@ public:
    const char *mark;			// current mark location
    char *prompt;			// current prompt
    int prompt_len;			// length of current prompt
-   Line *lines;				// unprocessed input lines
+   Name *reply_to;			// sender of last private message
    OutputBuffer Output;			// pending data output
    OutputBuffer Command;		// pending command output
-   InputFuncPtr InputFunc;		// input processor function
    unsigned char state;			// state (0/\r/IAC/WILL/WONT/DO/DONT)
-   bool SignalPublic;			// Signal for public messages?
-   bool SignalPrivate;			// Signal for private messages?
    bool undrawn;			// input line undrawn for output?
    bool blocked;			// output blocked?
    bool closing;			// connection closing?
-   bool do_echo;			// should server do echo?
-   char echo;				// ECHO option (local)
+   bool DoEcho;				// should server do echo?
+   char Echo;				// ECHO option (local)
    char LSGA;				// SUPPRESS-GO-AHEAD option (local)
    char RSGA;				// SUPPRESS-GO-AHEAD option (remote)
-   CallbackFuncPtr echo_callback;	// ECHO callback (local)
+   CallbackFuncPtr Echo_callback;	// ECHO callback (local)
    CallbackFuncPtr LSGA_callback;	// SUPPRESS-GO-AHEAD callback (local)
    CallbackFuncPtr RSGA_callback;	// SUPPRESS-GO-AHEAD callback (remote)
 
@@ -90,7 +88,7 @@ public:
    static void announce(const char *format, ...);
 
    // Nuke a user (force close connection).
-   static void nuke(Telnet *telnet, int fd, int drain);
+   static void nuke(Telnet *telnet, int fd, bool drain);
 
    Telnet(int lfd);			// constructor
    ~Telnet();				// destructor
@@ -108,27 +106,27 @@ public:
    int End() { return free - data; }	// end of input
    int EndLine() { return (Start() + End()) / width; } // end of input line
    int EndColumn() { return (Start() + End()) % width; } // end of input column
-   void Close() { fdtable.Close(fd); }	// Close telnet connection.
-   void nuke(Telnet *telnet, int drain); // force close connection
-   void Drain();			// Drain connection, then close.
-   void SaveInputLine(const char *line); // Save input line for later.
-   void SetInputFunction(InputFuncPtr input); // Set user input function.
+   void Close(bool drain = true);	// Close telnet connection.
+   void nuke(Telnet *telnet, bool drain); // force close connection
    void output(int byte);		// queue output byte
    void output(const char *buf);	// queue output data
    void output(const char *buf, int len); // queue output data (with length)
    void print(const char *format, ...);	// formatted write
+   void echo(int byte);			// echo output byte
+   void echo(const char *buf);		// echo output data
+   void echo(const char *buf, int len);	// echo output data (with length)
+   void echo_print(const char *format, ...);	// formatted echo
    void command(const char *buf);	// queue command data
    void command(const char *buf, int len); // queue command data (with length)
    void command(int byte);		// Queue command byte.
    void command(int byte1, int byte2);	// Queue 2 command bytes.
    void command(int byte1, int byte2, int byte3); // Queue 3 command bytes.
+   void PrintMessage(OutputType type, time_t time, Name *from,
+                     const char *start); // Print user message.
+   void Welcome();			// Send welcome banner and login prompt.
    void UndrawInput();			// Erase input line from screen.
    void RedrawInput();			// Redraw input line on screen.
-   void OutputWithRedraw(const char *buf); // queue output w/redraw
-   void PrintWithRedraw(const char *format, ...); // format output w/redraw
-   void PrintMessage(MessageType type, const char *from, const char *reply_to,
-                     const char *to, const char *msg); // Print user message.
-   void set_echo(CallbackFuncPtr callback, int state); // Set local ECHO option.
+   void set_Echo(CallbackFuncPtr callback, int state); // Set local ECHO option.
    void set_LSGA(CallbackFuncPtr callback, int state); // Set local SGA option.
    void set_RSGA(CallbackFuncPtr callback, int state); // Set remote SGA option.
    void beginning_of_line();		// Jump to beginning of line.

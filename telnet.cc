@@ -27,17 +27,9 @@ void Telnet::announce(const char *format, ...)
    fdtable.announce(buf);
 }
 
-void Telnet::nuke(Telnet *telnet, int fd, int drain)
+void Telnet::nuke(Telnet *telnet, int fd, bool drain)
 {
    fdtable.nuke(telnet, fd, drain);
-}
-
-void Telnet::Drain()			// Drain connection, then close.
-{
-   blocked = false;
-   closing = true;
-   NoReadSelect();
-   WriteSelect();
 }
 
 void Telnet::LogCaller()		// Log calling host and port.
@@ -50,33 +42,6 @@ void Telnet::LogCaller()		// Log calling host and port.
                   inet_ntoa(saddr.sin_addr), saddr.sin_port);
    } else {
       warn("Telnet::LogCaller(): getpeername()");
-   }
-}
-
-void Telnet::SaveInputLine(const char *line) // Save input line for later.
-{
-   Line *p;
-
-   p = new Line(line);
-   if (lines) {
-      lines->Append(p);
-   } else {
-      lines = p;
-   }
-}
-
-void Telnet::SetInputFunction(InputFuncPtr input) // Set user input function.
-{
-   Line *p;
-
-   InputFunc = input;
-
-   // Process lines as long as we still have a defined input function.
-   while (InputFunc && lines) {
-      p = lines;
-      lines = p->next;
-      InputFunc(this, p->line);
-      delete p;
    }
 }
 
@@ -157,6 +122,34 @@ void Telnet::print(const char *format, ...) // formatted write
    output(buf);
 }
 
+void Telnet::echo(int byte)		// echo output byte
+{
+   if (Echo == TelnetEnabled && DoEcho && !undrawn) output(byte);
+}
+
+void Telnet::echo(const char *buf)	// echo output data
+{
+   if (Echo == TelnetEnabled && DoEcho && !undrawn) output(buf);
+}
+
+void Telnet::echo(const char *buf, int len) // echo output data (with length)
+{
+   if (Echo == TelnetEnabled && DoEcho && !undrawn) output(buf, len);
+}
+
+void Telnet::echo_print(const char *format, ...) // formatted echo
+{
+   char buf[BufSize];
+   va_list ap;
+
+   if (Echo == TelnetEnabled && DoEcho && !undrawn) {
+      va_start(ap, format);
+      (void) vsprintf(buf, format, ap);
+      va_end(ap);
+      output(buf);
+   }
+}
+
 void Telnet::command(int byte)		// Queue command byte.
 {
    WriteSelect();			// Always write for command output.
@@ -189,49 +182,39 @@ void Telnet::command(const char *buf, int len) // queue command data (w/length)
    while (len--) Command.out(*((unsigned const char *) buf++));
 }
 
-void Telnet::OutputWithRedraw(const char *buf) // queue output w/redraw
+void Telnet::PrintMessage(OutputType type, time_t time, Name *from,
+                          const char *start)
 {
-   UndrawInput();
-   output(buf);
-   RedrawInput();
-}
-
-void Telnet::PrintWithRedraw(const char *format, ...) // format output w/redraw
-{
-   char buf[BufSize];
-   va_list ap;
-
-   UndrawInput();
-   va_start(ap, format);
-   (void) vsprintf(buf, format, ap);
-   va_end(ap);
-   output(buf);
-   RedrawInput();
-}
-
-void Telnet::PrintMessage(MessageType type, const char *from,
-                          const char *reply_to, const char *to, const char *msg)
-{
-   const char *p, *start, *wrap;
+   const char *wrap, *p;
    int col;
 
-   strncpy(session->reply_sendlist, reply_to, SendlistLen);
-   session->reply_sendlist[SendlistLen - 1] = 0;
-   UndrawInput();
    switch (type) {
-   case Public:
-      if (SignalPublic) output(Bell);
-      print("\n -> From %s to everyone: [%s]\n - ", from, date(0, 11, 5));
+   case PublicMessage:
+      // Print message header.
+      if (session->SignalPublic) output(Bell);
+      print("\n -> From %s to everyone:", from->name);
       break;
-   case Private:
-      if (SignalPrivate) output(Bell);
-      print("\n >> Private message from %s: [%s]\n - ", from, date(0, 11, 5));
+   case PrivateMessage:
+      // Save name to reply to.
+      if (reply_to && --reply_to->RefCnt == 0) delete reply_to;
+      if ((reply_to = from)) reply_to->RefCnt++;
+
+      // Print message header.
+      if (session->SignalPrivate) output(Bell);
+      print("\n >> Private message from %s:", from->name);
+      break;
+   default:
+      log_message("Internal error! (%s:%d)\n", __FILE__, __LINE__);
       break;
    }
-   start = msg;
+
+   // Print timestamp. (XXX make optional?)
+   print(" [%s]\n - ", date(time, 11, 5)); // XXX assumes within last day
+
    while (*start) {
-      wrap = 0;
-      for (p = start, col = 0; *p && col <= 75; p++, col++) {
+      wrap = NULL;
+
+      for (p = start, col = 0; *p && col < width - 4; p++, col++) {
          if (*p == Space) wrap = p;
       }
       if (!*p) {
@@ -240,6 +223,7 @@ void Telnet::PrintMessage(MessageType type, const char *from,
       } else if (wrap) {
          output(start, wrap - start);
          start = wrap + 1;
+         if (*start == Space) start++;
       } else {
          output(start, p - start);
          start = p;
@@ -247,20 +231,47 @@ void Telnet::PrintMessage(MessageType type, const char *from,
       output("\n - ");
    }
    output(Newline);
-   RedrawInput();
+}
+
+void Telnet::Welcome()
+{
+   // Make sure we're done with initial option negotiations.
+   // Intentionally use == with bitfield mask to test both bits at once.
+   if (LSGA == TelnetWillWont) return;
+   if (RSGA == TelnetDoDont) return;
+   if (Echo == TelnetWillWont) return;
+
+   // Send welcome banner, announce guest account.
+   output("\nWelcome to Phoenix!\n\nA \"guest\" account is available.\n\n");
+
+   // Let's hope the SUPPRESS-GO-AHEAD option worked.
+   if (!LSGA && !RSGA) {
+      // Sigh.  Couldn't suppress Go Aheads.  Inform the user.
+      output("Sorry, unable to suppress Go Aheads.  Must operate in half-"
+             "duplex mode.\n\n");
+   }
+
+   // Warn if about to shut down!
+   if (Shutdown) output("*** This server is about to shut down! ***\n\n");
+
+   // Send login prompt.
+   Prompt("login: ");
+
+   // Initialize user input processing function.
+   session->InitInputFunction();
 }
 
 // Set telnet ECHO option. (local)
-void Telnet::set_echo(CallbackFuncPtr callback, int state)
+void Telnet::set_Echo(CallbackFuncPtr callback, int state)
 {
    if (state) {
       command(TelnetIAC, TelnetWill, TelnetEcho);
-      echo |= TelnetWillWont;		// mark WILL sent
+      Echo |= TelnetWillWont;		// mark WILL sent
    } else {
       command(TelnetIAC, TelnetWont, TelnetEcho);
-      echo &= ~TelnetWillWont;		// mark WON'T sent
+      Echo &= ~TelnetWillWont;		// mark WON'T sent
    }
-   echo_callback = callback;		// save callback function
+   Echo_callback = callback;		// save callback function
 }
 
 // Set telnet SUPPRESS-GO-AHEAD option. (local)
@@ -299,19 +310,16 @@ Telnet::Telnet(int lfd)			// Telnet constructor.
    mark = NULL;				// No mark set initially.
    prompt = NULL;			// No prompt initially.
    prompt_len = 0;			// Length of prompt
-   SignalPublic = true;			// Default public signal on. (for now)
-   SignalPrivate = true;		// Default private signal on.
-   lines = NULL;			// No pending input lines.
-   InputFunc = NULL;			// No input function.
    state = 0;				// telnet input state = 0 (data)
+   reply_to = NULL;			// No last sender.
    undrawn = false;			// Input line not undrawn.
    blocked = false;			// output not blocked
    closing = false;			// connection not closing
-   do_echo = true;			// Do echoing, if ECHO option enabled.
-   echo = 0;				// ECHO option off (local)
+   DoEcho = true;			// Do echoing, if ECHO option enabled.
+   Echo = 0;				// ECHO option off (local)
    LSGA = 0;				// local SUPPRESS-GO-AHEAD option off
    RSGA = 0;				// remote SUPPRESS-GO-AHEAD option off
-   echo_callback = NULL;		// no ECHO callback (local)
+   Echo_callback = NULL;		// no ECHO callback (local)
    LSGA_callback = NULL;		// no local SUPPRESS-GO-AHEAD callback
    RSGA_callback = NULL;		// no remote SUPPRESS-GO-AHEAD callback
 
@@ -325,13 +333,14 @@ Telnet::Telnet(int lfd)			// Telnet constructor.
 
    ReadSelect();			// Select new connection for reading.
 
-   set_LSGA(welcome, true);		// Start initial options negotiations.
-   set_RSGA(welcome, true);
-   set_echo(welcome, true);
+   set_LSGA(&Telnet::Welcome, true);	// Start initial options negotiations.
+   set_RSGA(&Telnet::Welcome, true);
+   set_Echo(&Telnet::Welcome, true);
 }
 
 void Telnet::Prompt(const char *p)	// Print and set new prompt.
 {
+   session->EnqueueOutput();
    prompt_len = strlen(p);
    if (prompt) delete prompt;
    prompt = new char[prompt_len + 1];
@@ -344,7 +353,7 @@ Telnet::~Telnet()
    delete session;			// Free session structure.
    delete data;				// Free input line buffer.
 
-   if (fd != -1) {			// Skip all this if there's no connection.
+   if (fd != -1) {			// Check if there is an open connection.
       fdtable.Closed(fd);		// Remove from FDTable.
       close(fd);			// Close connection.
       NoReadSelect();			// Don't select closed connections!
@@ -352,30 +361,38 @@ Telnet::~Telnet()
    }
 }
 
+void Telnet::Close(bool drain)		// Close telnet connection.
+{
+   if (Output.head && drain) {		// Drain connection, then close.
+      blocked = false;
+      closing = true;
+      NoReadSelect();
+      WriteSelect();
+   } else {				// No output pending, close immediately.
+      fdtable.Close(fd);
+   }
+}
+
 // Nuke a user (force close connection).
-void Telnet::nuke(Telnet *telnet, int drain)
+void Telnet::nuke(Telnet *telnet, bool drain)
 {
    telnet->print("User \"%s\" (%s) on fd #%d has been nuked.\n",
                  session->name_only, session->user->user, fd);
-   if (Output.head && drain) {
-      Drain();
-   } else {
-      Close();
-   }
+   Close(drain);
 }
 
 void Telnet::UndrawInput()		// Erase input line from screen.
 {
    int lines;
 
-   if (echo == TelnetEnabled && do_echo && !undrawn && End()) {
+   if (!undrawn && End()) {
       undrawn = true;
       lines = PointLine();
       // XXX ANSI!
       if (lines) {
-         print("\r\033[%dA\033[J", lines); // Move cursor up and erase.
+         echo_print("\r\033[%dA\033[J", lines); // Move cursor up and erase.
       } else {
-         output("\r\033[J");		// Erase line.
+         echo("\r\033[J");		// Erase line.
       }
    }
 }
@@ -384,19 +401,19 @@ void Telnet::RedrawInput()		// Redraw input line on screen.
 {
    int lines, columns;
 
-   if (echo == TelnetEnabled && do_echo && undrawn && End()) {
+   if (undrawn && End()) {
       undrawn = false;
       if (prompt) output(prompt);
-      output(data, End());
+      echo(data, End());
       if (!AtEnd()) {			// Move cursor back to point.
          lines = EndLine() - PointLine();
          columns = EndColumn() - PointColumn();
          // XXX ANSI!
-         if (lines) print("\033[%dA", lines);
+         if (lines) echo_print("\033[%dA", lines);
          if (columns > 0) {
-            print("\033[%dD", columns);
+            echo_print("\033[%dD", columns);
          } else if (columns < 0) {
-            print("\033[%dC", -columns);
+            echo_print("\033[%dC", -columns);
          }
       }
    }
@@ -406,14 +423,14 @@ inline void Telnet::beginning_of_line()	// Jump to beginning of line.
 {
    int lines, columns;
 
-   if (echo == TelnetEnabled && do_echo && Point()) {
+   if (Point()) {
       lines = PointLine() - StartLine();
       columns = PointColumn() - StartColumn();
-      if (lines) print("\033[%dA", lines); // XXX ANSI!
+      if (lines) echo_print("\033[%dA", lines); // XXX ANSI!
       if (columns > 0) {
-         print("\033[%dD", columns);	// XXX ANSI!
+         echo_print("\033[%dD", columns); // XXX ANSI!
       } else if (columns < 0) {
-         print("\033[%dC", -columns);	// XXX ANSI!
+         echo_print("\033[%dC", -columns); // XXX ANSI!
       }
    }
    point = data;
@@ -423,14 +440,14 @@ inline void Telnet::end_of_line()	// Jump to end of line.
 {
    int lines, columns;
 
-   if (echo == TelnetEnabled && do_echo && End() && !AtEnd()) {
+   if (End() && !AtEnd()) {
       lines = EndLine() - PointLine();
       columns = EndColumn() - PointColumn();
-      if (lines) print("\033[%dB", lines); // XXX ANSI!
+      if (lines) echo_print("\033[%dB", lines); // XXX ANSI!
       if (columns > 0) {
-         print("\033[%dC", columns);	// XXX ANSI!
+         echo_print("\033[%dC", columns); // XXX ANSI!
       } else if (columns < 0) {
-         print("\033[%dD", -columns);	// XXX ANSI!
+         echo_print("\033[%dD", -columns); // XXX ANSI!
       }
    }
    point = free;
@@ -439,7 +456,7 @@ inline void Telnet::end_of_line()	// Jump to end of line.
 inline void Telnet::kill_line()		// Kill from point to end of line.
 {
    if (!AtEnd()) {
-      if (echo == TelnetEnabled && do_echo) output("\033[J"); // XXX ANSI!
+      echo("\033[J");			// XXX ANSI!
       // XXX kill ring!
       free = point;			// Truncate input buffer.
       if (mark > point) mark = point;
@@ -480,10 +497,8 @@ inline void Telnet::accept_input()	// Accept input line.
    }
 
    // Jump to end of line and echo newline if necessary.
-   if (echo == TelnetEnabled && do_echo) {
-      if (!AtEnd()) end_of_line();
-      output(Newline);
-   }
+   if (!AtEnd()) end_of_line();
+   output(Newline);
 
    point = free = data;			// Wipe input line. (data intact)
    mark = NULL;				// Wipe mark.
@@ -493,13 +508,7 @@ inline void Telnet::accept_input()	// Accept input line.
    }
    prompt_len = 0;			// Wipe prompt length.
 
-   // Call user and state-specific input line processor.
-
-   if (InputFunc) {			// If available, call immediately.
-      InputFunc(this, data);
-   } else {				// Otherwise, save input line for later.
-      SaveInputLine(data);
-   }
+   session->Input(data);		// Call state-specific input processor.
 
    if ((end - data) > InputSize) {	// Drop buffer back to normal size.
       delete data;
@@ -515,10 +524,8 @@ inline void Telnet::insert_char(int ch)	// Insert character at point.
       for (char *p = free++; p > point; p--) *p = p[-1];
       *point++ = ch;
       // Echo character if necessary.
-      if (echo == TelnetEnabled && do_echo) {
-         if (!AtEnd()) output("\033[@"); // XXX ANSI!
-         output(ch);
-      }
+      if (!AtEnd()) echo("\033[@");	// XXX ANSI!
+      echo(ch);
    } else {
       output(Bell);
    }
@@ -528,12 +535,10 @@ inline void Telnet::forward_char()	// Move point forward one character.
 {
    if (!AtEnd()) {
       point++;				// Change point in buffer.
-      if (echo == TelnetEnabled && do_echo) {
-         if (PointColumn()) {		// Advance cursor on current line.
-            output("\033[C");		// XXX ANSI!
-         } else {			// Move to start of next screen line.
-            output("\r\n");
-         }
+      if (PointColumn()) {		// Advance cursor on current line.
+         echo("\033[C");		// XXX ANSI!
+      } else {				// Move to start of next screen line.
+         echo("\r\n");
       }
    }
 }
@@ -541,12 +546,10 @@ inline void Telnet::forward_char()	// Move point forward one character.
 inline void Telnet::backward_char()	// Move point backward one character.
 {
    if (Point()) {
-      if (echo == TelnetEnabled && do_echo) {
-         if (PointColumn()) {		// Backspace on current screen line.
-            output(Backspace);
-         } else {			// Move to end of previous screen line.
-            print("\033[A\033[%dC", width - 1); // XXX ANSI!
-         }
+      if (PointColumn()) {		// Backspace on current screen line.
+         echo(Backspace);
+      } else {				// Move to end of previous screen line.
+         echo_print("\033[A\033[%dC", width - 1); // XXX ANSI!
       }
       point--;				// Change point in buffer.
    }
@@ -558,13 +561,10 @@ inline void Telnet::erase_char()	// Erase input character before point.
       point--;
       free--;
       for (char *p = point; p < free; p++) *p = p[1];
-      if (echo == TelnetEnabled && do_echo) {
-         if (AtEnd()) {
-            output("\010 \010");	// Echo backspace, space, backspace.
-         } else {
-            // XXX ANSI!
-            output("\010\033[P");	// Backspace, delete character.
-         }
+      if (AtEnd()) {
+         echo("\010 \010");		// Echo backspace, space, backspace.
+      } else {
+         echo("\010\033[P");		// Backspace/delete character. XXX ANSI!
       }
    }
 }
@@ -574,10 +574,7 @@ inline void Telnet::delete_char()	// Delete character at point.
    if (End() && !AtEnd()) {
       free--;
       for (char *p = point; p < free; p++) *p = p[1];
-      if (echo == TelnetEnabled && do_echo) {
-         // XXX ANSI!
-         output("\033[P");		// XXX Delete character.
-      }
+      echo("\033[P");			// Delete character. XXX ANSI!
    }
 }
 
@@ -590,11 +587,9 @@ inline void Telnet::transpose_chars()	// Exchange two characters at point.
       char tmp = point[0];
       point[0] = point[-1];
       point[-1] = tmp;
-      if (echo == TelnetEnabled && do_echo) {
-         output(Backspace);
-         output(point[-1]);
-         output(point[0]);
-      }
+      echo(Backspace);
+      echo(point[-1]);
+      echo(point[0]);
       point++;
    }
 }
@@ -738,7 +733,7 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
                   }
                }
                if (RSGA_callback) {
-                  RSGA_callback(this);
+                  (this->*RSGA_callback)();
                   RSGA_callback = NULL;
                }
                break;
@@ -757,23 +752,23 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
             switch (n) {
             case TelnetEcho:
                if (state == TelnetDo) {
-                  echo |= TelnetDoDont;
-                  if (!(echo & TelnetWillWont)) {
+                  Echo |= TelnetDoDont;
+                  if (!(Echo & TelnetWillWont)) {
                      // Turn on ECHO option.
-                     echo |= TelnetWillWont;
+                     Echo |= TelnetWillWont;
                      command(TelnetIAC, TelnetWill, TelnetEcho);
                   }
                } else {
-                  echo &= ~TelnetDoDont;
-                  if (echo & TelnetWillWont) {
+                  Echo &= ~TelnetDoDont;
+                  if (Echo & TelnetWillWont) {
                      // Turn off ECHO option.
-                     echo &= ~TelnetWillWont;
+                     Echo &= ~TelnetWillWont;
                      command(TelnetIAC, TelnetWont, TelnetEcho);
                   }
                }
-               if (echo_callback) {
-                  echo_callback(this);
-                  echo_callback = NULL;
+               if (Echo_callback) {
+                  (this->*Echo_callback)();
+                  Echo_callback = NULL;
                }
                break;
             case TelnetSuppressGoAhead:
@@ -800,7 +795,7 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
                   }
                }
                if (LSGA_callback) {
-                  LSGA_callback(this);
+                  (this->*LSGA_callback)();
                   LSGA_callback = NULL;
                }
                break;
@@ -971,32 +966,36 @@ void Telnet::OutputReady(int fd)	// Telnet stream can output data.
 
    // Send user data, if any.
    while (Output.head) {
-      block = Output.head;
-      n = write(fd, block->data, block->free - block->data);
-      switch (n) {
-      case -1:
-         switch (errno) {
-         case EINTR:
-         case EWOULDBLOCK:
-            return;
+      while (Output.head) {
+         block = Output.head;
+         block = Output.head;
+         n = write(fd, block->data, block->free - block->data);
+         switch (n) {
+         case -1:
+            switch (errno) {
+            case EINTR:
+            case EWOULDBLOCK:
+               return;
+            default:
+               warn("Telnet::OutputReady(): write(fd = %d)", fd);
+               delete this;
+               break;
+            }
+            break;
          default:
-            warn("Telnet::OutputReady(): write(fd = %d)", fd);
-            delete this;
+            block->data += n;
+            if (block->data >= block->free) {
+               if (block->next) {
+                  Output.head = block->next;
+               } else {
+                  Output.head = Output.tail = NULL;
+               }
+               delete block;
+            }
             break;
          }
-         break;
-      default:
-         block->data += n;
-         if (block->data >= block->free) {
-            if (block->next) {
-               Output.head = block->next;
-            } else {
-               Output.head = Output.tail = NULL;
-            }
-            delete block;
-         }
-         break;
       }
+      session->Pending.Dequeue(this);
    }
 
    // Done sending all queued output.

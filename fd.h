@@ -31,7 +31,6 @@ public:
    }
    virtual void InputReady(int fd) = 0;	// Input ready on file descriptor fd.
    virtual void OutputReady(int fd) = 0; // Output ready on file descriptor fd.
-   virtual void output(const char *buf) {} // queue output data
    virtual ~FD() {}			// destructor
    void NonBlocking() {			// Place fd in non-blocking mode.
       int flags;

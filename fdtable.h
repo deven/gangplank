@@ -55,7 +55,7 @@ public:
    }
 
    // Nuke a user (force close connection).
-   void nuke(Telnet *telnet, int fd, int drain);
+   void nuke(Telnet *telnet, int fd, bool drain);
 };
 
 #endif // fdtable.h
