@@ -896,7 +896,11 @@ void new_connection(int lfd)		/* accept a new connection */
 
    /* Accept TCP connection. */
    fd = accept(lfd, NULL, NULL);
-   if (fd == -1) error("accept");
+   if (fd == -1) {
+      /* Accept failed, just return to select() loop. */
+      warn("accept");
+      return;
+   }
 
    /* Place in non-blocking mode. */
    flags = fcntl(fd, F_GETFL);		/* get flags */
