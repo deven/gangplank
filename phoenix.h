@@ -112,7 +112,6 @@ void OpenLog();
 void log_message(const char *format, ...);
 void warn(const char *format, ...);
 void error(const char *format, ...);
-void notify(const char *format, ...);
 const char *message_start(const char *line, char *sendlist, int len,
                           int *is_explicit);
 int match_name(const char *name, const char *sendlist);
@@ -122,14 +121,12 @@ void password(Telnet *telnet, const char *line);
 void name(Telnet *telnet, const char *line);
 void blurb(Telnet *telnet, const char *line);
 void process_input(Telnet *telnet, const char *line);
-void who_cmd(Telnet *telnet);
 void erase_line(Telnet *telnet);
 void quit(int sig);
 void alrm(int sig);
 int main(int argc, char **argv);
 
 // Global variables.
-extern Session *sessions;		// active sessions
 extern int Shutdown;			// shutdown flag
 extern FILE *logfile;			// log file
 

@@ -13,6 +13,8 @@
 #include "telnet.h"
 #include "user.h"
 
+Session *Session::sessions = NULL;
+
 Session::Session(Telnet *t)
 {
    time_t now;				// current time
@@ -61,6 +63,12 @@ Session::~Session()
    delete user;
 }
 
+void Session::Link()		// Link session into global list.
+{
+   next = sessions;
+   sessions = this;
+}
+
 int Session::ResetIdle(int min)		// Reset/return idle time, maybe report.
 {
    int now, idle, days, hours, minutes;
@@ -83,6 +91,71 @@ int Session::ResetIdle(int min)		// Reset/return idle time, maybe report.
    return idle;
 }
 
+void Session::notify(const char *format, ...) // formatted write to all sessions
+{
+   char buf[BufSize];
+   Session *session;
+   va_list ap;
+
+   va_start(ap, format);
+   (void) vsprintf(buf, format, ap);
+   va_end(ap);
+   for (session = sessions; session; session = session->next) {
+      session->telnet->OutputWithRedraw(buf);
+   }
+}
+
+void Session::who_cmd(Telnet *telnet)
+{
+   Session *s;
+   Telnet *t;
+   int idle, days, hours, minutes;
+
+   // Output /who header.
+   telnet->output("\n"
+        " Name                              On Since   Idle   User      fd\n"
+        " ----                              --------   ----   ----      --\n");
+
+   // Output data about each user.
+   for (s = sessions; s; s = s->next) {
+      t = s->telnet;
+      idle = (time(NULL) - t->session->idle_since) / 60;
+      if (idle) {
+         hours = idle / 60;
+         minutes = idle - hours * 60;
+         days = hours / 24;
+         hours -= days * 24;
+         if (days) {
+            telnet->print(" %-32s  %8s %2dd%2d:%02d %-8s  %2d\n",
+                          t->session->name, date(t->session->login_time, 11, 8),
+                          days, hours, minutes, t->session->user->user, t->fd);
+         } else if (hours) {
+            telnet->print(" %-32s  %8s  %2d:%02d   %-8s  %2d\n",
+                          t->session->name, date(t->session->login_time, 11, 8),
+                          hours, minutes, t->session->user->user, t->fd);
+         } else {
+            telnet->print(" %-32s  %8s   %4d   %-8s  %2d\n", t->session->name,
+                          date(t->session->login_time, 11, 8), minutes,
+                          t->session->user->user, t->fd);
+         }
+      } else {
+         telnet->print(" %-32s  %8s          %-8s  %2d\n", t->session->name,
+                       date(t->session->login_time, 11, 8),
+                       t->session->user->user, t->fd);
+      }
+   }
+}
+
+void Session::CheckShutdown()   // Exit if shutting down and no users are left.
+{
+   if (Shutdown && !sessions) {
+      log_message("All connections closed, shutting down.");
+      log_message("Server down.");
+      if (logfile) fclose(logfile);
+      exit(0);
+   }
+}
+
 // Send a message to everyone else signed on.
 void Session::SendEveryone(const char *msg)
 {
@@ -95,7 +168,8 @@ void Session::SendEveryone(const char *msg)
 
    switch (sent) {
    case 0:
-      telnet->print("\a\aThere is no one else here! (message not sent)\n");
+      telnet->print("%c%cThere is no one else here! (message not sent)\n",
+                    Bell, Bell);
       break;
    case 1:
       ResetIdle(10);			// reset idle time
@@ -126,7 +200,8 @@ void Session::SendByFD(int fd, const char *sendlist, int is_explicit,
          return;
       }
    }
-   telnet->print("\a\aThere is no user on fd #%d. (message not sent)\n", fd);
+   telnet->print("%c%cThere is no user on fd #%d. (message not sent)\n",
+                 Bell, Bell, fd);
 }
 
 // Send private message by partial name match.
@@ -161,8 +236,8 @@ void Session::SendPrivate(const char *sendlist, int is_explicit,
       for (unsigned char *p = (unsigned char *) sendlist; *p; p++) {
          if (*p == UnquotedUnderscore) *p = Underscore;
       }
-      telnet->print("\a\aNo names matched \"%s\". (message not sent)\n",
-                    sendlist);
+      telnet->print("%c%cNo names matched \"%s\". (message not sent)\n", Bell,
+                    Bell, sendlist);
       break;
    case 1:				// Found single match, send message.
       ResetIdle(10);			// reset idle time
@@ -170,8 +245,8 @@ void Session::SendPrivate(const char *sendlist, int is_explicit,
       dest->telnet->PrintMessage(Private, name, name_only, NULL, msg);
       break;
    default:				// Multiple matches.
-      telnet->print("\a\a\"%s\" matches %d names, including \"%s\" and \"%s\""
-                    ". (message not sent)\n", sendlist, matches,
+      telnet->print("%c%c\"%s\" matches %d names, including \"%s\" and \"%s\""
+                    ". (message not sent)\n", Bell, Bell, sendlist, matches,
                     dest->name_only, session->name_only);
       break;
    }

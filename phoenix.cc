@@ -18,7 +18,6 @@
 #include "user.h"
 
 // Global variables.
-Session *sessions;			// active sessions
 int Shutdown;				// shutdown flag
 FILE *logfile;				// log file
 
@@ -109,20 +108,6 @@ void error(const char *format, ...)	// print error message and exit
                   strerror(errno));
    if (logfile) fclose(logfile);
    exit(1);
-}
-
-void notify(const char *format, ...)	// formatted write to all sessions
-{
-   char buf[BufSize];
-   Session *session;
-   va_list ap;
-
-   va_start(ap, format);
-   (void) vsprintf(buf, format, ap);
-   va_end(ap);
-   for (session = sessions; session; session = session->next) {
-      session->telnet->OutputWithRedraw(buf);
-   }
 }
 
 const char *message_start(const char *line, char *sendlist, int len,
@@ -400,20 +385,19 @@ void blurb(Telnet *telnet, const char *line)
    }
 
    // Announce entry.
-   notify("*** %s has entered Phoenix! [%s] ***\n", telnet->session->name,
-          date(time(&telnet->session->login_time), 11, 5));
+   Session::notify("*** %s has entered Phoenix! [%s] ***\n",
+                   telnet->session->name,
+                   date(time(&telnet->session->login_time), 11, 5));
    telnet->session->idle_since = telnet->session->login_time;
    log_message("Enter: %s (%s) on fd #%d.", telnet->session->name_only,
                telnet->session->user->user, telnet->fd);
 
-   // Link new session into list.
-   telnet->session->next = sessions;
-   sessions = telnet->session;
+   telnet->session->Link();		// Link new session into list.
 
    // Print welcome banner and do a /who list.
    telnet->output("\n\nWelcome to Phoenix.  Type \"/help\" for a list of "
                   "commands.\n\n");
-   who_cmd(telnet);
+   Session::who_cmd(telnet);
 
    // Set normal input routine.
    telnet->SetInputFunction(process_input);
@@ -497,7 +481,7 @@ void process_input(Telnet *telnet, const char *line)
          }
       } else if (!strncmp(line, "/who", 4)) {
          // /who list.
-         who_cmd(telnet);
+         Session::who_cmd(telnet);
       } else if (!strcmp(line, "/date")) {
          // Print current date and time.
          telnet->print("%s\n", date(0, 0, 0));
@@ -676,47 +660,6 @@ void process_input(Telnet *telnet, const char *line)
    }
 }
 
-void who_cmd(Telnet *telnet)
-{
-   Session *s;
-   Telnet *t;
-   int idle, days, hours, minutes;
-
-   // Output /who header.
-   telnet->output("\n"
-      " Name                              On Since   Idle   User      fd\n"
-      " ----                              --------   ----   ----      --\n");
-
-   // Output data about each user.
-   for (s = sessions; s; s = s->next) {
-      t = s->telnet;
-      idle = (time(NULL) - t->session->idle_since) / 60;
-      if (idle) {
-         hours = idle / 60;
-         minutes = idle - hours * 60;
-         days = hours / 24;
-         hours -= days * 24;
-         if (days) {
-            telnet->print(" %-32s  %8s %2dd%2d:%02d %-8s  %2d\n",
-                          t->session->name, date(t->session->login_time, 11, 8),
-                          days, hours, minutes, t->session->user->user, t->fd);
-         } else if (hours) {
-            telnet->print(" %-32s  %8s  %2d:%02d   %-8s  %2d\n",
-                          t->session->name, date(t->session->login_time, 11, 8),
-                          hours, minutes, t->session->user->user, t->fd);
-         } else {
-            telnet->print(" %-32s  %8s   %4d   %-8s  %2d\n", t->session->name,
-                          date(t->session->login_time, 11, 8), minutes,
-                          t->session->user->user, t->fd);
-         }
-      } else {
-         telnet->print(" %-32s  %8s          %-8s  %2d\n", t->session->name,
-                       date(t->session->login_time, 11, 8),
-                       t->session->user->user, t->fd);
-      }
-   }
-}
-
 void quit(int sig)			// received SIGQUIT or SIGTERM
 {
    log_message("Shutdown requested by signal in 30 seconds.");
@@ -749,7 +692,6 @@ int main(int argc, char **argv)		// main program
    int pid;				// server process number
 
    Shutdown = 0;
-   sessions = NULL;
    if (chdir(HOME)) error(HOME);
    OpenLog();
    Listen::Open(Port);
@@ -786,13 +728,7 @@ int main(int argc, char **argv)		// main program
    }
 
    while(1) {
-      // Exit if shutting down and no users are left.
-      if (Shutdown && !sessions) {
-         log_message("All connections closed, shutting down.");
-         log_message("Server down.");
-         if (logfile) fclose(logfile);
-         exit(0);
-      }
+      Session::CheckShutdown();
       FD::Select();
    }
 }

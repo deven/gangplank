@@ -16,6 +16,8 @@
 
 // Data about a particular session.
 class Session {
+protected:
+   static Session *sessions;		// List of all sessions. (global)
 public:
    Session *next;			// next session
    User *user;				// user this session belongs to
@@ -31,6 +33,7 @@ public:
 
    Session(Telnet *t);			// constructor
    ~Session();				// destructor
+   void Link();				// Link session into global list.
    int ResetIdle(int min);		// Reset/return idle time, maybe report.
 
    // Send public message to everyone.
@@ -42,6 +45,15 @@ public:
 
    // Send private message by partial name match.
    void SendPrivate(const char *sendlist, int is_explicit, const char *msg);
+
+   // Formatted write to all sessions.
+   static void notify(const char *format, ...);
+
+   // Run /who command.
+   static void who_cmd(Telnet *telnet);
+
+   // Exit if shutting down and no users are left.
+   static void CheckShutdown();
 };
 
 #endif // session.h
