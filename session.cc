@@ -59,3 +59,25 @@ Session::~Session()
 
    delete user;
 }
+
+int Session::ResetIdle(int min)		// Reset/return idle time, maybe report.
+{
+   int now, idle, days, hours, minutes;
+
+   now = time(NULL);
+   idle = (now - idle_since) / 60;
+
+   if (min && idle >= min) {
+      hours = idle / 60;
+      minutes = idle - hours * 60;
+      days = hours / 24;
+      hours -= days * 24;
+      telnet->output("[You were idle for ");
+      if (days) telnet->print("%d day%s%s ", days, days == 1 ? "" : "s",
+                              hours ? "," : " and");
+      if (hours) telnet->print("%d hour%s and ", hours, hours == 1 ? "" : "s");
+      telnet->print("%d minute%s.]\n", minutes, minutes == 1 ? "" : "s");
+   }
+   idle_since = now;
+   return idle;
+}

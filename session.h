@@ -30,6 +30,7 @@ public:
 
    Session(Telnet *t);			// constructor
    ~Session();				// destructor
+   int ResetIdle(int min);		// Reset/return idle time, maybe report.
 };
 
 #endif // session.h

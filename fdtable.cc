@@ -166,7 +166,7 @@ void FDTable::SendByFD(Telnet *telnet, int fd, const char *sendlist,
    }
 
    if ((t = (Telnet *) array[fd]) && t->type == TelnetFD) {
-      time(&telnet->session->idle_since); // reset idle tme
+      telnet->session->ResetIdle(10);	// reset idle time
       telnet->print("(message sent to %s.)\n", t->session->name);
       t->PrintWithRedraw("%c\n >> Private message from %s: [%s]\n - %s\n",
                          Bell, telnet->session->name, date(0, 11, 5), msg);
@@ -182,7 +182,7 @@ void FDTable::SendEveryone(Telnet *telnet, const char *msg)
    Session *s;
    int sent;
 
-   time(&telnet->session->idle_since); // reset idle time
+   telnet->session->ResetIdle(10);	// reset idle time
 
    sent = 0;
    for (s = sessions; s; s = s->next) {
@@ -244,7 +244,7 @@ void FDTable::SendPrivate(Telnet *telnet, const char *sendlist, int is_explicit,
                     Bell, Bell, sendlist);
       break;
    case 1:				// Found single match, send message.
-      time(&telnet->session->idle_since); // reset idle tme
+      telnet->session->ResetIdle(10);	// reset idle time
       telnet->print("(message sent to %s.)\n", dest->session->name);
       dest->PrintWithRedraw("%c\n >> Private message from %s: [%s]\n - %s\n",
                             Bell, telnet->session->name, date(0, 11, 5), msg);

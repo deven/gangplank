@@ -590,11 +590,9 @@ void process_input(Telnet *telnet, const char *line)
          telnet->output("Unknown /command.  Type /help for help.\n");
       }
    } else if (!strcmp(line, " ")) {
-      int idle;
-
-      idle = (time(NULL) - telnet->session->idle_since) / 60;
-      time(&telnet->session->idle_since); // reset idle time
-      if (idle) telnet->print("Your idle time has been reset.\n");
+      if (telnet->session->ResetIdle(1)) {
+         telnet->print("Your idle time has been reset.\n");
+      }
    } else if (*line) {
       int is_explicit;
       int i;
