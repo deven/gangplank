@@ -476,6 +476,7 @@ int listen_on(int port, int backlog)	/* listen on a port, return socket fd */
    struct sockaddr_in saddr;		/* socket address */
    int fd;				/* listening socket fd */
    int tries = 0;			/* number of tries so far */
+   int option = 1;			/* option to set for setsockopt() */
 
    /* Initialize listening socket. */
    memset(&saddr, 0, sizeof(saddr));
@@ -483,6 +484,9 @@ int listen_on(int port, int backlog)	/* listen on a port, return socket fd */
    saddr.sin_addr.s_addr = htonl(INADDR_ANY);
    saddr.sin_port = htons((u_short) port);
    if ((fd = socket(PF_INET, SOCK_STREAM, 0)) == -1) error("socket");
+   if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option))) {
+      error("setsockopt");
+   }
 
    /* Try to bind to the port.  Try real hard. */
    while (1) {
