@@ -42,7 +42,8 @@ enum TelnetCommand {
 // Telnet options.
 enum TelnetOption {
    TelnetEcho = 1,
-   TelnetSuppressGoAhead = 3
+   TelnetSuppressGoAhead = 3,
+   TelnetTimingMark = 6
 };
 
 // Telnet option bits.
@@ -76,6 +77,7 @@ public:
    bool undrawn;			// input line undrawn for output?
    bool blocked;			// output blocked?
    bool closing;			// connection closing?
+   bool acknowledge;			// use telnet TIMING-MARK option?
    bool DoEcho;				// should server do echo?
    char Echo;				// ECHO option (local)
    char LSGA;				// SUPPRESS-GO-AHEAD option (local)
@@ -121,6 +123,7 @@ public:
    void command(int byte);		// Queue command byte.
    void command(int byte1, int byte2);	// Queue 2 command bytes.
    void command(int byte1, int byte2, int byte3); // Queue 3 command bytes.
+   void TimingMark(void);		// Queue TIMING-MARK telnet option.
    void PrintMessage(OutputType type, time_t time, Name *from,
                      const char *start); // Print user message.
    void Welcome();			// Send welcome banner and login prompt.

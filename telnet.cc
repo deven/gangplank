@@ -182,6 +182,11 @@ void Telnet::command(const char *buf, int len) // queue command data (w/length)
    while (len--) Command.out(*((unsigned const char *) buf++));
 }
 
+void Telnet::TimingMark(void)		// Queue TIMING-MARK telnet option.
+{
+   if (acknowledge) Output.out(TelnetIAC, TelnetDo, TelnetTimingMark);
+}
+
 void Telnet::PrintMessage(OutputType type, time_t time, Name *from,
                           const char *start)
 {
@@ -315,6 +320,7 @@ Telnet::Telnet(int lfd)			// Telnet constructor.
    undrawn = false;			// Input line not undrawn.
    blocked = false;			// output not blocked
    closing = false;			// connection not closing
+   acknowledge = false;			// Test TIMING-MARK option before use.
    DoEcho = true;			// Do echoing, if ECHO option enabled.
    Echo = 0;				// ECHO option off (local)
    LSGA = 0;				// local SUPPRESS-GO-AHEAD option off
@@ -332,6 +338,9 @@ Telnet::Telnet(int lfd)			// Telnet constructor.
    session = new Session(this);		// Create a new Session.
 
    ReadSelect();			// Select new connection for reading.
+
+   // Test TIMING-MARK option before sending initial option negotions.
+   command(TelnetIAC, TelnetDo, TelnetTimingMark);
 
    set_LSGA(&Telnet::Welcome, true);	// Start initial options negotiations.
    set_RSGA(&Telnet::Welcome, true);
@@ -737,11 +746,14 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
                   RSGA_callback = NULL;
                }
                break;
+            case TelnetTimingMark:
+               if (Echo == TelnetWillWont) {
+                  acknowledge = true;
+               }
+               break;
             default:
                // Don't know this option, refuse it.
-               if (state == TelnetWill) {
-                  command(TelnetIAC, TelnetDont, n);
-               }
+               if (state == TelnetWill) command(TelnetIAC, TelnetDont, n);
                break;
             }
             state = 0;
