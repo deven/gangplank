@@ -49,6 +49,10 @@ extern "C" {
 #define EWOULDBLOCK EAGAIN
 #endif
 
+#ifndef ECONNTIMEDOUT
+#define ECONNTIMEDOUT ETIMEDOUT
+#endif
+
 // Declare strerror() if needed.
 #ifdef NEED_STRERROR
 const char *strerror(int err)
