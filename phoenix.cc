@@ -561,15 +561,13 @@ void process_input(Telnet *telnet, const char *line)
             }
          }
       } else if (!strncmp(line, "/help", 5)) {
-         // help?  ha!
-         telnet->output("Help?  Help?!?  This program isn't done, you know.\n"
-                        "\nOnly known commands:\n\n"
+         telnet->output("Currently known commands:\n\n"
                         "/blurb -- set a descriptive blurb\n"
                         "/bye -- leave Phoenix\n"
                         "/date -- display current date and time\n"
+                        "/help -- gives this thrilling message\n"
                         "/send -- specify default sendlist\n"
-                        "/who -- gives trivial list of who is connected\n"
-                        "/help -- gives this dumb message\n\n"
+                        "/who -- gives a list of who is connected\n"
                         "No other /commands are implemented yet.\n\n"
                         "There are two ways to specify a user to send a "
                         "private message.  You can use\n"
