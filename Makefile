@@ -1,3 +1,4 @@
+# -*- Makefile -*-
 #
 # Conferencing system server.
 #
@@ -12,7 +13,7 @@ CFLAGS = -g
 LDFLAGS =
 
 # ESIX:
-#CFLAGS = -DUSE_SIGIGNORE
+#CFLAGS = -DUSE_SIGIGNORE -DNO_BOOLEAN
 #LDFLAGS = -bsd
 #
 # Sun:
@@ -20,8 +21,9 @@ LDFLAGS =
 #LDFLAGS =
 
 EXEC = conf
-HDRS = conf.h
-SRCS = conf.cc
+HDRS = block.h conf.h fd.h fdtable.h line.h listen.h outbuf.h session.h \
+	telnet.h user.h
+SRCS = conf.cc fdtable.cc listen.cc session.cc telnet.cc user.cc
 OBJS = $(SRCS:.cc=.o)
 
 EXEC2 = restart
