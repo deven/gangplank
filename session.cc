@@ -329,6 +329,10 @@ void Session::ProcessInput(const char *line) // Process normal input.
    } else if (*line == '/') {
       if (!strncasecmp(line, "/bye", 4)) {
          DoBye();
+      } else if (!strncasecmp(line, "/clear", 6)) {
+         DoClear();
+      } else if (!strncasecmp(line, "/unidle", 7)) {
+         DoReset();
       } else if (!strncasecmp(line, "/detach", 4)) {
          DoDetach();
       } else if (!strncasecmp(line, "/who", 4)) {
@@ -509,6 +513,11 @@ void Session::DoNuke(const char *args)	// Do !nuke command.
 void Session::DoBye()			// Do /bye command.
 {
    Close();				// Close session.
+}
+
+void Session::DoClear()			// Do /clear command.
+{
+   output("\033[H\033[J");		// XXX ANSI!
 }
 
 void Session::DoDetach()		// Do /detach command.
