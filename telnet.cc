@@ -634,20 +634,23 @@ void Telnet::InputReady()		// Telnet stream can input data.
       switch (errno) {
       case EINTR:
       case EWOULDBLOCK:
+#if EAGAIN != EWOULDBLOCK
+      case EAGAIN:
+#endif
          break;
       case ECONNRESET:
       case ECONNTIMEDOUT:
          Closed();
-         break;
+         return;
       default:
          warn("Telnet::InputReady(): read(fd = %d)", fd);
          Closed();
-         break;
+         return;
       }
       break;
    case 0:
       Closed();
-      break;
+      return;
    default:
       from = buf;
       from_end = buf + n;
@@ -956,15 +959,18 @@ void Telnet::OutputReady()		// Telnet stream can output data.
          switch (errno) {
          case EINTR:
          case EWOULDBLOCK:
+#if EAGAIN != EWOULDBLOCK
+         case EAGAIN:
+#endif
             return;
          case ECONNRESET:
          case ECONNTIMEDOUT:
             Closed();
-            break;
+            return;
          default:
             warn("Telnet::OutputReady(): write(fd = %d)", fd);
             Closed();
-            break;
+            return;
          }
          break;
       default:
@@ -998,11 +1004,14 @@ void Telnet::OutputReady()		// Telnet stream can output data.
             switch (errno) {
             case EINTR:
             case EWOULDBLOCK:
+#if EAGAIN != EWOULDBLOCK
+            case EAGAIN:
+#endif
                return;
             default:
                warn("Telnet::OutputReady(): write(fd = %d)", fd);
                Closed();
-               break;
+               return;
             }
             break;
          default:
