@@ -22,7 +22,9 @@ public:
    Telnet *telnet;			// telnet connection for this session
    time_t login_time;			// time logged in
    time_t idle_since;			// last idle time
-   char name[NameLen];			// current user name (pseudo)
+   char name_only[NameLen];		// current user name (pseudo) alone
+   char name[NameLen];			// current user name (pseudo) with blurb
+   char blurb[NameLen];			// current user blurb
    char default_sendlist[SendlistLen];	// current default sendlist
    char last_sendlist[SendlistLen];	// last explicit sendlist
 

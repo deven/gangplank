@@ -23,6 +23,7 @@ public:
    char password[32];			// password for this account
    // XXX change! ^^^
    char reserved_name[NameLen];		// reserved user name (pseudo)
+   char default_blurb[NameLen];		// default blurb
 
    User(Session *s);			// constructor
 };

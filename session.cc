@@ -19,7 +19,10 @@ Session::Session(Telnet *t)
 
    telnet = t;				// Save Telnet pointer.
    next = NULL;				// No next session yet.
+
+   name_only[0] = 0;			// No name yet.
    name[0] = 0;				// No name yet.
+   blurb[0] = 0;			// No blurb yet.
 
    strcpy(default_sendlist, "everyone"); // Default sendlist is "everyone".
    last_sendlist[0] = 0;		// No previous sendlist yet.
@@ -51,7 +54,7 @@ Session::~Session()
    // Notify and log exit if session found.
    if (found) {
       notify("*** %s has left Phoenix! [%s] ***\n", name, date(0, 11, 5));
-      log_message("Exit: %s (%s) on fd #%d.", name, user->user, telnet->fd);
+      log_message("Exit: %s (%s) on fd #%d.", name_only, user->user, telnet->fd);
    }
 
    delete user;

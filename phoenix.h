@@ -112,6 +112,7 @@ void welcome(Telnet *telnet);
 void login(Telnet *telnet, const char *line);
 void password(Telnet *telnet, const char *line);
 void name(Telnet *telnet, const char *line);
+void blurb(Telnet *telnet, const char *line);
 void process_input(Telnet *telnet, const char *line);
 void who_cmd(Telnet *telnet);
 void erase_line(Telnet *telnet);

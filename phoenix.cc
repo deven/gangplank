@@ -290,7 +290,7 @@ void login(Telnet *telnet, const char *line)
                found = 1;
                strcpy(telnet->session->user->user, user);
                strcpy(telnet->session->user->password, passwd);
-               strcpy(telnet->session->name, name);
+               strcpy(telnet->session->name_only, name);
                telnet->session->user->priv = atoi(priv ? priv : "0");
                break;
             }
@@ -335,7 +335,8 @@ void password(Telnet *telnet, const char *line)
       telnet->SetInputFunction(login);
    } else {
       // XXX stuff
-      telnet->print("\nYour default name is \"%s\".\n", telnet->session->name);
+      telnet->print("\nYour default name is \"%s\".\n",
+                    telnet->session->name_only);
 
       // Enable echoing.
       telnet->do_echo = true;
@@ -361,20 +362,52 @@ void name(Telnet *telnet, const char *line)
       }
    } else {
       // Save user's name.
-      strncpy(telnet->session->name, line, NameLen);
-      telnet->session->name[NameLen - 1] = 0;
+      strncpy(telnet->session->name_only, line, NameLen);
+      telnet->session->name_only[NameLen - 1] = 0;
    }
 
-   // Link new session into list.
-   telnet->session->next = sessions;
-   sessions = telnet->session;
+   // Prompt for blurb.
+   telnet->Prompt("Enter blurb: ");
+
+   // Set name input routine.
+   telnet->SetInputFunction(blurb);
+}
+
+void blurb(Telnet *telnet, const char *line)
+{
+   int over;
+
+   if (!*line) line = telnet->session->user->default_blurb;
+   if (*line) {
+      over = strlen(telnet->session->name_only) + strlen(line) + 4 - NameLen;
+      if (over > 0) {
+         telnet->print("The combination of your name and blurb is %d character"
+                       "%s too long.\n", over, over == 1 ? "" : "s");
+         // Prompt for blurb.
+         telnet->Prompt("Enter blurb: ");
+         return;
+      } else {
+         // Save user's name, with blurb.
+         strcpy(telnet->session->blurb, line);
+         sprintf(telnet->session->name, "%s [%s]", telnet->session->name_only,
+                 telnet->session->blurb);
+      }
+   } else {
+      // Save user's name, no blurb.
+      telnet->session->blurb[0] = 0;
+      strcpy(telnet->session->name, telnet->session->name_only);
+   }
 
    // Announce entry.
    notify("*** %s has entered Phoenix! [%s] ***\n", telnet->session->name,
           date(time(&telnet->session->login_time), 11, 5));
    telnet->session->idle_since = telnet->session->login_time;
-   log_message("Enter: %s (%s) on fd #%d.", telnet->session->name,
+   log_message("Enter: %s (%s) on fd #%d.", telnet->session->name_only,
                telnet->session->user->user, telnet->fd);
+
+   // Link new session into list.
+   telnet->session->next = sessions;
+   sessions = telnet->session;
 
    // Set normal input routine.
    telnet->SetInputFunction(process_input);
@@ -392,7 +425,8 @@ void process_input(Telnet *telnet, const char *line)
       if (!strncmp(line, "!down", 5)) {
          if (!strcmp(line, "!down !")) {
             log_message("Immediate shutdown requested by %s (%s).",
-                telnet->session->name, telnet->session->user->user);
+                        telnet->session->name_only,
+                        telnet->session->user->user);
             log_message("Final shutdown warning.");
             fdtable.announce("*** %s has shut down Phoenix! ***\n",
                              telnet->session->name);
@@ -404,8 +438,9 @@ void process_input(Telnet *telnet, const char *line)
             if (Shutdown) {
                Shutdown = 0;
                alarm(0);
-               log_message("Shutdown canceled by %s (%s).",
-                           telnet->session->name, telnet->session->user->user);
+               log_message("Shutdown cancelled by %s (%s).",
+                           telnet->session->name_only,
+                           telnet->session->user->user);
                fdtable.announce("*** %s has cancelled the server shutdown. ***"
                                 "\n", telnet->session->name);
             } else {
@@ -416,7 +451,8 @@ void process_input(Telnet *telnet, const char *line)
 
             if (sscanf(line + 5, "%d", &i) != 1) i = 30;
             log_message("Shutdown requested by %s (%s) in %d seconds.",
-                        telnet->session->name, telnet->session->user->user, i);
+                        telnet->session->name_only,
+                        telnet->session->user->user, i);
             fdtable.announce("*** %s has shut down Phoenix! ***\n",
                              telnet->session->name);
             fdtable.announce("%c%c>>> This server will shutdown in %d "
@@ -484,10 +520,46 @@ void process_input(Telnet *telnet, const char *line)
             telnet->print("Your default sendlist is now set to \"%s\".\n",
                   telnet->session->default_sendlist);
          }
+      } else if (!strncmp(line, "/blurb", 3)) {
+         const char *start = line, *end;
+         int len = NameLen - strlen(telnet->session->name_only) - 4;
+
+         while (*start && !isspace(*start)) start++;
+         while (*start && isspace(*start)) start++;
+         if (*start) {
+            for (const char *p = start; *p; p++) if (!isspace(*p)) end = p;
+            if (strncmp(start, "off", end - start + 1)) {
+               if ((*start == '[' && *end == ']') ||
+                   (*start == '\"' && *end == '\"')) start++; else end++;
+               if (end - start < len) len = end - start;
+               strncpy(telnet->session->blurb, start, len);
+               telnet->session->blurb[len] = 0;
+               sprintf(telnet->session->name, "%s [%s]",
+                       telnet->session->name_only, telnet->session->blurb);
+               telnet->print("Your blurb has been set to [%s].\n",
+                             telnet->session->blurb);
+            } else {
+               if (telnet->session->blurb[0]) {
+                  telnet->session->blurb[0] = 0;
+                  strcpy(telnet->session->name, telnet->session->name_only);
+                  telnet->output("Your blurb has been turned off.\n");
+               } else {
+                  telnet->output("Your blurb was already turned off.\n");
+               }
+            }
+         } else {
+            if (telnet->session->blurb[0]) {
+               telnet->print("Your blurb is currently set to [%s].\n",
+                              telnet->session->blurb);
+            } else {
+               telnet->output("You do not currently have a blurb set.\n");
+            }
+         }
       } else if (!strncmp(line, "/help", 5)) {
          // help?  ha!
          telnet->output("Help?  Help?!?  This program isn't done, you know.\n"
                         "\nOnly known commands:\n\n"
+                        "/blurb -- set a descriptive blurb\n"
                         "/bye -- leave Phoenix\n"
                         "/date -- display current date and time\n"
                         "/send -- specify default sendlist\n"
