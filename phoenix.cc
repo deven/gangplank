@@ -4,7 +4,7 @@
 //
 // phoenix.cc -- main server code.
 //
-// Copyright (c) 1992-1993 Deven T. Corzine
+// Copyright (c) 1992-1994 Deven T. Corzine
 //
 
 // Include files.
