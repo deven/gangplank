@@ -394,15 +394,20 @@ void Telnet::UndrawInput()		// Erase input line from screen.
 {
    int lines;
 
-   if (!undrawn && End()) {
-      undrawn = true;
+   if (undrawn) return;
+   undrawn = true;
+   if (Echo == TelnetEnabled && DoEcho) {
+      if (!Start() && !End()) return;
       lines = PointLine();
-      // XXX ANSI!
-      if (lines) {
-         echo_print("\r\033[%dA\033[J", lines); // Move cursor up and erase.
-      } else {
-         echo("\r\033[J");		// Erase line.
-      }
+   } else {
+      if (!Start()) return;
+      lines = StartLine();
+   }
+   // ANSI! ***
+   if (lines) {
+      print("\r\033[%dA\033[J", lines);	// Move cursor up and erase.
+   } else {
+      output("\r\033[J");		// Erase line.
    }
 }
 
@@ -410,9 +415,10 @@ void Telnet::RedrawInput()		// Redraw input line on screen.
 {
    int lines, columns;
 
-   if (undrawn && End()) {
-      undrawn = false;
-      if (prompt) output(prompt);
+   if (!undrawn) return;
+   undrawn = false;
+   if (prompt) output(prompt);
+   if (End()) {
       echo(data, End());
       if (!AtEnd()) {			// Move cursor back to point.
          lines = EndLine() - PointLine();
@@ -505,9 +511,14 @@ inline void Telnet::accept_input()	// Accept input line.
       blocked = false;
    }
 
+   // Flush any pending output to connection.
+   if (!acknowledge) {
+      while (session->OutputNext(this)) session->AcknowledgeOutput();
+   }
+
    // Jump to end of line and echo newline if necessary.
    if (!AtEnd()) end_of_line();
-   output(Newline);
+   echo(Newline);
 
    point = free = data;			// Wipe input line. (data intact)
    mark = NULL;				// Wipe mark.
@@ -747,7 +758,9 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
                }
                break;
             case TelnetTimingMark:
-               if (Echo == TelnetWillWont) {
+               if (acknowledge) {
+                  session->AcknowledgeOutput();
+               } else if (Echo == TelnetWillWont) {
                   acknowledge = true;
                }
                break;
@@ -1007,7 +1020,24 @@ void Telnet::OutputReady(int fd)	// Telnet stream can output data.
             break;
          }
       }
-      session->Pending.Dequeue(this);
+
+      // If the telnet TIMING-MARK option doesn't get a response from the
+      // remote end, then generate a fake acknowledge locally when the
+      // output is fully buffered by the kernel.  Some output might well
+      // get lost, but at least the data has passed from the output
+      // buffers into the kernel.  That will have to do when end-to-end
+      // synchronization can't be done.  Any telnet implementation which
+      // follows the telnet specifications is supposed to reject any and
+      // all unknown option requests that come in, so the only reason for
+      // the TIMING-MARK option to be disabled is if the remote end is
+      // really straight TCP or a very broken telnet implementation.
+      // If acknowledgements are enabled, all output is dumped to the
+      // Telnet buffers as it is queued.
+
+      if (!acknowledge) {
+         session->AcknowledgeOutput();
+         session->OutputNext(this);
+      }
    }
 
    // Done sending all queued output.

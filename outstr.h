@@ -20,21 +20,27 @@ private:
    class OutputObject {
    public:
       OutputObject *next;
-      Output *output;
+      Output *OutputObj;
 
       OutputObject(Output *out) {	// constructor
 	 next = NULL;
-	 if ((output = out)) output->RefCnt++;
+	 if ((OutputObj = out)) OutputObj->RefCnt++;
       }
       ~OutputObject() {			// destructor
-	 if (output && --output->RefCnt == 0) delete output;
+	 if (OutputObj && --OutputObj->RefCnt == 0) delete OutputObj;
       }
+      void output(Telnet *telnet);
    };
 public:
    OutputObject *head;			// first output object
+   OutputObject *sent;			// next output object to send
    OutputObject *tail;			// last output object
+   int Acknowledged;			// count of acknowledged queue objects
+   int Sent;				// count of sent queue objects
+
    OutputStream() {			// constructor
-      head = tail = NULL;
+      head = sent = tail = NULL;
+      Acknowledged = Sent = 0;
    }
    ~OutputStream() {			// destructor
       while (head) {			// Free any remaining output in queue.
@@ -42,10 +48,15 @@ public:
          head = out->next;
          delete out;
       }
-      tail = NULL;
+      sent = tail = NULL;
+      Acknowledged = Sent = 0;
+   }
+   void Acknowledge(void) {		// Acknowledge a block of output.
+      if (Acknowledged < Sent) Acknowledged++;
    }
    void Enqueue(Telnet *telnet, Output *out);
-   void Dequeue(Telnet *telnet);
+   void Dequeue(void);
+   bool SendNext(Telnet *telnet);
 };
 
 #endif // outstr.h
