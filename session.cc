@@ -130,14 +130,14 @@ void Session::Login(const char *line)	// Process response to login prompt.
    if (!strcasecmp(line, "/bye")) {
       DoBye();
       return;
-   } else if (!strcasecmp(line, "/who")) {
-      DoWho();
-      telnet->Prompt("login: ");
-      return;
-   } else if (!strcasecmp(line, "/idle")) {
-      DoIdle();
-      telnet->Prompt("login: ");
-      return;
+//   } else if (!strcasecmp(line, "/who")) {
+//      DoWho();
+//      telnet->Prompt("login: ");
+//      return;
+//   } else if (!strcasecmp(line, "/idle")) {
+//      DoIdle();
+//      telnet->Prompt("login: ");
+//      return;
    } else if (!strcasecmp(line, "guest")) {
       strcpy(user->user, line);
       name[0] = 0;
@@ -171,14 +171,19 @@ void Session::Login(const char *line)	// Process response to login prompt.
       }
       fclose(pw);
       if (!found) {
-         telnet->output("Login incorrect.\n");
+         if (*line) telnet->output("Login incorrect.\n");
          telnet->Prompt("login: ");
          return;
       }
    }
 
    // Warn if echo can't be turned off.
-   if (!telnet->Echo) telnet->print("\n\aSorry, password WILL echo.\n\n");
+   if (!telnet->Echo) {
+      telnet->output("\n\aSorry, password WILL echo.\n\n");
+   } else if (telnet->Echo != TelnetEnabled) {
+      telnet->output("\nWarning: password may echo.\n\n");
+   }
+
    telnet->Prompt("Password: ");	// Prompt for password.
    telnet->DoEcho = false;		// Disable echoing.
    SetInputFunction(&Session::Password); // Set password input routine.
@@ -194,11 +199,12 @@ void Session::Password(const char *line) // Process response to password prompt.
       telnet->output("Login incorrect.\n");
       telnet->Prompt("login: ");	// Prompt for login.
       SetInputFunction(&Session::Login); // Set login input routine.
-   } else {
-      telnet->print("\nYour default name is \"%s\".\n\n", name_only);
-      telnet->Prompt("Enter name: ");	// Prompt for name.
-      SetInputFunction(&Session::DoName); // Set name input routine.
+      return;
    }
+
+   telnet->print("\nYour default name is \"%s\".\n\n", name_only);
+   telnet->Prompt("Enter name: ");	// Prompt for name.
+   SetInputFunction(&Session::DoName);	// Set name input routine.
 }
 
 void Session::DoName(const char *line)	// Process response to name prompt.
