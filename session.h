@@ -12,36 +12,40 @@
 #define _SESSION_H 1
 
 // Include files.
+#include "object.h"
 #include "outbuf.h"
+#include "output.h"
 #include "outstr.h"
 #include "phoenix.h"
 
 // Data about a particular session.
-class Session {
+class Session: public Object {
 protected:
-   static Session *sessions;		// List of all sessions. (global)
+   static Pointer<Session> sessions;	// List of all sessions. (global)
 public:
-   Session *next;			// next session
-   User *user;				// user this session belongs to
-   Telnet *telnet;			// telnet connection for this session
+   Pointer<Session> next;		// next session
+   Pointer<User> user;			// user this session belongs to
+   Pointer<Telnet> telnet;		// telnet connection for this session
    InputFuncPtr InputFunc;		// function pointer for input processor
-   Line *lines;				// unprocessed input lines
+   Pointer<Line> lines;			// unprocessed input lines
    OutputBuffer OutBuf;			// temporary output buffer
    OutputStream Pending;		// pending output stream
    time_t login_time;			// time logged in
    time_t idle_since;			// last idle time
    bool SignalPublic;			// Signal for public messages?
    bool SignalPrivate;			// Signal for private messages?
+   bool closing;			// Session closing?
    char name_only[NameLen];		// current user name (pseudo) alone
    char name[NameLen];			// current user name (pseudo) with blurb
    char blurb[NameLen];			// current user blurb
-   Name *name_obj;			// current name object.
+   Pointer<Name> name_obj;		// current name object.
    char default_sendlist[SendlistLen];	// current default sendlist
    char last_sendlist[SendlistLen];	// last explicit sendlist
    char reply_sendlist[SendlistLen];	// reply sendlist for last sender
 
    Session(Telnet *t);			// constructor
    ~Session();				// destructor
+   void Close(bool drain = true);	// Close session.
    void SaveInputLine(const char *line);
    void SetInputFunction(InputFuncPtr input);
    void InitInputFunction();
@@ -65,7 +69,8 @@ public:
       Pending.Enqueue(telnet, out);
    }
    void EnqueueOthers(Output *out) {	// Enqueue output to others.
-      for (Session *session = sessions; session; session = session->next) {
+      Session *session;
+      for (session = sessions; session; session = session->next) {
          if (session == this) continue;
          session->Enqueue(out);
       }

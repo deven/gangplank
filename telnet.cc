@@ -201,8 +201,7 @@ void Telnet::PrintMessage(OutputType type, time_t time, Name *from,
       break;
    case PrivateMessage:
       // Save name to reply to.
-      if (reply_to && --reply_to->RefCnt == 0) delete reply_to;
-      if ((reply_to = from)) reply_to->RefCnt++;
+      reply_to = from;
 
       // Print message header.
       if (session->SignalPrivate) output(Bell);
@@ -357,7 +356,24 @@ void Telnet::Prompt(const char *p)	// Print and set new prompt.
    if (!undrawn) output(prompt);
 }
 
-Telnet::~Telnet()
+Telnet::~Telnet()			// Destructor, might be re-executed.
+{
+   Closed();
+}
+
+void Telnet::Close(bool drain)		// Close telnet connection.
+{
+   closing = true;			// Closing intentionally.
+   if (Output.head && drain) {		// Drain connection, then close.
+      blocked = false;
+      NoReadSelect();
+      WriteSelect();
+   } else {				// No output pending, close immediately.
+      fdtable.Close(fd);
+   }
+}
+
+void Telnet::Closed()			// Connection is closed.
 {
    if (session->telnet) {
       session->telnet = NULL;		// Detach associated session.
@@ -365,26 +381,17 @@ Telnet::~Telnet()
                   session->user->user, fd);
    }
 
-   delete data;				// Free input line buffer.
+   // Free input line buffer.
+   if (data) delete data;
+   data = NULL;
 
-   if (fd != -1) {			// Check if there is an open connection.
-      fdtable.Closed(fd);		// Remove from FDTable.
-      close(fd);			// Close connection.
-      NoReadSelect();			// Don't select closed connections!
-      NoWriteSelect();
-   }
-}
+   if (fd == -1) return;		// Skip the rest if no connection.
 
-void Telnet::Close(bool drain)		// Close telnet connection.
-{
-   if (Output.head && drain) {		// Drain connection, then close.
-      blocked = false;
-      closing = true;
-      NoReadSelect();
-      WriteSelect();
-   } else {				// No output pending, close immediately.
-      fdtable.Close(fd);
-   }
+   fdtable.Closed(fd);			// Remove from FDTable.
+   close(fd);				// Close connection.
+   NoReadSelect();			// Don't select closed connections!
+   NoWriteSelect();
+   fd = -1;				// Connection is closed.
 }
 
 // Nuke a user (force close connection).
@@ -635,16 +642,16 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
          break;
       case ECONNRESET:
       case ECONNTIMEDOUT:
-         delete this;
+         Closed();
          break;
       default:
          warn("Telnet::InputReady(): read(fd = %d)", fd);
-         delete this;
+         Closed();
          break;
       }
       break;
    case 0:
-      delete this;
+      Closed();
       break;
    default:
       from = buf;
@@ -966,11 +973,11 @@ void Telnet::OutputReady(int fd)	// Telnet stream can output data.
             return;
          case ECONNRESET:
          case ECONNTIMEDOUT:
-            delete this;
+            Closed();
             break;
          default:
             warn("Telnet::OutputReady(): write(fd = %d)", fd);
-            delete this;
+            Closed();
             break;
          }
          break;
@@ -1008,7 +1015,7 @@ void Telnet::OutputReady(int fd)	// Telnet stream can output data.
                return;
             default:
                warn("Telnet::OutputReady(): write(fd = %d)", fd);
-               delete this;
+               Closed();
                break;
             }
             break;
@@ -1050,7 +1057,7 @@ void Telnet::OutputReady(int fd)	// Telnet stream can output data.
 
    // Close connection if ready to.
    if (closing) {
-      delete this;
+      Closed();
       return;
    }
 

@@ -10,6 +10,7 @@
 // Include files.
 #include "output.h"
 #include "phoenix.h"
+#include "session.h"
 #include "telnet.h"
 
 void Text::output(Telnet *telnet)

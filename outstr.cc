@@ -10,6 +10,7 @@
 // Include files.
 #include "outstr.h"
 #include "phoenix.h"
+#include "session.h"
 #include "telnet.h"
 
 void OutputStream::OutputObject::output(Telnet *telnet) // Output object.

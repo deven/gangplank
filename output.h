@@ -13,6 +13,7 @@
 
 // Include files.
 #include "name.h"
+#include "object.h"
 #include "phoenix.h"
 
 // Types of Output subclasses.
@@ -24,83 +25,63 @@ enum OutputType {
 // Classifications of Output subclasses.
 enum OutputClass {UnknownClass, TextClass, MessageClass, NotificationClass};
 
-class Output {
+class Output: public Object {
 public:
    OutputType Type;			// Output type.
    OutputClass Class;			// Output class.
    time_t time;				// Timestamp.
-   int RefCnt;				// Reference count.
 
-   Output(time_t when = 0) {		// constructor
+   // constructor
+   Output(OutputType t, OutputClass c, time_t when = 0): Type(t), Class(c) {
       if (when) {
          time = when;
       } else {
          ::time(&time);
       }
-      RefCnt = 0;
    }
    virtual ~Output() {}			// destructor
    virtual void output(Telnet *telnet) = 0;
 };
 
 class Text: public Output {
-   char *text;
+protected:
+   const char *text;
 public:
-   Text(char *buf): Output() {
-      Type = TextOutput;
-      Class = TextClass;
-      text = buf;
-   }
-   ~Text() {
-      delete text;
-   }
+   Text(const char *buf): Output(TextOutput, TextClass), text(buf) { }
+   ~Text() { delete[] text; }
    void output(Telnet *telnet);
 };
 
 class Message: public Output {
+protected:
+   Pointer<Name> from;
+   // Pointer<Sendlist> to;
+   const char *text;
 public:
-   Name *from;
-   // Sendlist *to; XXX
-   char *text;
-   Message(OutputType type, Name *sender, const char *msg): Output() {
-      Type = type;
-      Class = MessageClass;
-      if ((from = sender)) from->RefCnt++;
+   Message(OutputType type, Name *sender, const char *msg):
+      Output(type, MessageClass), from(sender) {
       text = new char[strlen(msg) + 1];
-      strcpy(text, msg);
+      strcpy((char *) text, msg);
    }
-   ~Message() {
-      if (from && --from->RefCnt == 0) delete from;
-      delete text;
-   }
+   ~Message() { delete text; }
    void output(Telnet *telnet);
 };
 
 class EntryNotify: public Output {
+protected:
+   Pointer<Name> name;
 public:
-   Name *name;
-   EntryNotify(Name *name_obj, time_t when = 0): Output(when) {
-      Type = EntryOutput;
-      Class = NotificationClass;
-      if ((name = name_obj)) name->RefCnt++;
-   }
-   ~EntryNotify() {			// destructor
-      if (name && --name->RefCnt == 0) delete name;
-   }
+   EntryNotify(Name *who, time_t when = 0):
+      Output(EntryOutput, NotificationClass, when), name(who) { }
    void output(Telnet *telnet);
 };
 
 class ExitNotify: public Output {
+protected:
+   Pointer<Name> name;
 public:
-   Name *name;
-   ExitNotify(Name *name_obj, time_t when = 0): Output(when) { // constructor
-      Type = ExitOutput;
-      Class = NotificationClass;
-      if ((name = name_obj)) name->RefCnt++;
-   }
-   ~ExitNotify() {			// destructor
-      if (name && --name->RefCnt == 0) delete name;
-   }
+   ExitNotify(Name *who, time_t when = 0):
+      Output(ExitOutput, NotificationClass, when), name(who) { }
    void output(Telnet *telnet);
 };
 

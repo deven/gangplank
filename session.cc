@@ -14,7 +14,7 @@
 #include "telnet.h"
 #include "user.h"
 
-Session *Session::sessions = NULL;
+Pointer<Session> Session::sessions = NULL;
 
 Session::Session(Telnet *t)
 {
@@ -41,17 +41,18 @@ Session::Session(Telnet *t)
 
 Session::~Session()
 {
-   Session *s;
-   Telnet *t;
-   int found;
+   Close();
+}
 
+void Session::Close(bool drain)		// Close session.
+{
    // Unlink session from list, remember if found.
-   found = 0;
+   Pointer<Session> s = sessions;
+   int found = 0;
    if (sessions == this) {
       sessions = next;
       found++;
    } else {
-      s = sessions;
       while (s && s->next != this) s = s->next;
       if (s && s->next == this) {
          s->next = next;
@@ -62,12 +63,12 @@ Session::~Session()
    if (found) NotifyExit();		// Notify and log exit if session found.
 
    if (telnet) {
-      t = telnet;
+      Pointer<Telnet> t = telnet;
       telnet = NULL;
-      t->Close();			// Drain connection, then close.
+      t->Close(drain);			// Close connection.
    }
 
-   delete user;				// XXX make user stay around
+   user = NULL;
 }
 
 void Session::SaveInputLine(const char *line)
@@ -84,16 +85,12 @@ void Session::SaveInputLine(const char *line)
 
 void Session::SetInputFunction(InputFuncPtr input)
 {
-   Line *p;
-
    InputFunc = input;
 
    // Process lines as long as we still have a defined input function.
    while (InputFunc != NULL && lines) {
-      p = lines;
-      lines = p->next;
-      (this->*InputFunc)(p->line);
-      delete p;
+      (this->*InputFunc)(lines->line);
+      lines = lines->next;
       EnqueueOutput();			// Enqueue output buffer (if any).
    }
 }
@@ -388,7 +385,7 @@ void Session::DoNuke(const char *args)	// Do !nuke command.
 
 void Session::DoBye()			// Do /bye command.
 {
-   delete this;				// Destroy session. (closes connection)
+   Close();				// Close session.
 }
 
 void Session::DoDetach()		// Do /detach command.
@@ -413,7 +410,8 @@ void Session::DoWho()			// Do /who command.
           "\n");
 
    // Output data about each user.
-   for (Session *session = sessions; session; session = session->next) {
+   Session *session;
+   for (session = sessions; session; session = session->next) {
       if (session->telnet) {
          output(Space);
       } else {
@@ -482,7 +480,8 @@ void Session::DoIdle()			// Do /idle command.
    }
 
    // Output data about each user.
-   for (Session *session = sessions; session; session = session->next) {
+   Session *session;
+   for (session = sessions; session; session = session->next) {
       if (session->telnet) {
          output(Space);
       } else {
@@ -707,7 +706,8 @@ void Session::DoMessage(const char *line) // Do message send.
 // Send private message by fd #.
 void Session::SendByFD(int fd, const char *msg)
 {
-   for (Session *session = sessions; session; session = session->next) {
+   Session *session;
+   for (session = sessions; session; session = session->next) {
       if (session->telnet && session->telnet->fd == fd) {
          ResetIdle(10);			// reset idle time
          print("(message sent to %s.)\n", session->name);
@@ -722,7 +722,8 @@ void Session::SendByFD(int fd, const char *msg)
 void Session::SendEveryone(const char *msg)
 {
    int sent = 0;
-   for (Session *session = sessions; session; session = session->next) {
+   Session *session;
+   for (session = sessions; session; session = session->next) {
       if (session == this) continue;
       session->Enqueue(new Message(PublicMessage, name_obj, msg));
       sent++;

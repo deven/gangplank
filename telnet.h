@@ -47,9 +47,9 @@ enum TelnetOption {
 };
 
 // Telnet option bits.
-const int TelnetWillWont = 1;
-const int TelnetDoDont = 2;
-const int TelnetEnabled = (TelnetDoDont|TelnetWillWont);
+static const int TelnetWillWont = 1;
+static const int TelnetDoDont = 2;
+static const int TelnetEnabled = (TelnetDoDont|TelnetWillWont);
 
 // Telnet options are stored in a single byte each, with bit 0 representing
 // WILL or WON'T state and bit 1 representing DO or DON'T state.  The option
@@ -62,7 +62,7 @@ protected:
 public:
    static const int width = 80;		// XXX Hardcoded screen width
    static const int height = 24;	// XXX Hardcoded screen height
-   Session *session;			// link to session object
+   Pointer<Session> session;		// link to session object
    char *data;				// start of input data
    char *free;				// start of free area of allocated block
    const char *end;			// end of allocated block (+1)
@@ -70,7 +70,7 @@ public:
    const char *mark;			// current mark location
    char *prompt;			// current prompt
    int prompt_len;			// length of current prompt
-   Name *reply_to;			// sender of last private message
+   Pointer<Name> reply_to;		// sender of last private message
    OutputBuffer Output;			// pending data output
    OutputBuffer Command;		// pending command output
    unsigned char state;			// state (0/\r/IAC/WILL/WONT/DO/DONT)
@@ -94,6 +94,7 @@ public:
 
    Telnet(int lfd);			// constructor
    ~Telnet();				// destructor
+   void Closed();			// Connection is closed.
    void Prompt(const char *p);		// Print and set new prompt.
    bool AtEnd() { return point == free; } // point at end of input?
    int Start() { return prompt_len; }	// start of input (after prompt)

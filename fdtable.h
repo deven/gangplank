@@ -12,6 +12,7 @@
 #define _FDTABLE_H 1
 
 // Include files.
+#include "object.h"
 #include "phoenix.h"
 
 // File descriptor table.
@@ -19,7 +20,7 @@ class FDTable {
 protected:
    static fd_set readfds;		// read fdset for select()
    static fd_set writefds;		// write fdset for select()
-   FD **array;				// dynamic array of file descriptors
+   Pointer<FD> *array;			// dynamic array of file descriptors
    int size;				// size of file descriptor table
    int used;				// number of file descriptors used
 public:
@@ -27,7 +28,7 @@ public:
    ~FDTable();				// destructor
    void OpenListen(int port);		// Open a listening port.
    void OpenTelnet(int lfd);		// Open a telnet connection.
-   FD *Closed(int fd);			// Close fd, return FD object pointer.
+   Pointer<FD> Closed(int fd);		// Close fd, return FD object pointer.
    void Close(int fd);			// Close fd, deleting FD object.
    void Select();			// Select across all ready connections.
    void InputReady(int fd);		// Input ready on file descriptor fd.

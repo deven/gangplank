@@ -20,15 +20,10 @@ private:
    class OutputObject {
    public:
       OutputObject *next;
-      Output *OutputObj;
+      Pointer<Output> OutputObj;
 
-      OutputObject(Output *out) {	// constructor
-	 next = NULL;
-	 if ((OutputObj = out)) OutputObj->RefCnt++;
-      }
-      ~OutputObject() {			// destructor
-	 if (OutputObj && --OutputObj->RefCnt == 0) delete OutputObj;
-      }
+      // constructor
+      OutputObject(Output *out): OutputObj(out) { next = NULL; }
       void output(Telnet *telnet);
    };
 public:

@@ -11,6 +11,7 @@
 #include "fdtable.h"
 #include "listen.h"
 #include "phoenix.h"
+#include "session.h"
 #include "telnet.h"
 
 void Listen::Open(int port)
@@ -65,6 +66,21 @@ Listen::Listen(int port)		// Listen on a port.
       }
    }
    if (listen(fd, Backlog)) error("Listen::Listen(): listen()");
+}
+
+Listen::~Listen()			// Listen destructor.
+{
+   Closed();
+}
+
+void Listen::Closed()			// Connection is closed.
+{
+   if (fd == -1) return;		// Skip the rest if already closed.
+   fdtable.Closed(fd);			// Remove from FDTable.
+   close(fd);				// Close connection.
+   NoReadSelect();			// Don't select closed connections!
+   NoWriteSelect();
+   fd = -1;				// Connection is closed.
 }
 
 void Listen::RequestShutdown(int port)	// Connect to port, request shutdown.

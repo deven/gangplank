@@ -13,13 +13,14 @@
 
 // Include files.
 #include "fdtable.h"
+#include "object.h"
 #include "phoenix.h"
 
 // Types of FD subclasses.
 enum FDType {UnknownFD, ListenFD, TelnetFD};
 
 // Data about a particular file descriptor.
-class FD {
+class FD: public Object {
 protected:
    static FDTable fdtable;		// File descriptor table.
 public:
@@ -31,6 +32,7 @@ public:
    }
    virtual void InputReady(int fd) = 0;	// Input ready on file descriptor fd.
    virtual void OutputReady(int fd) = 0; // Output ready on file descriptor fd.
+   virtual void Closed() = 0;		// Connection is closed.
    virtual ~FD() {}			// destructor
    void NonBlocking() {			// Place fd in non-blocking mode.
       int flags;

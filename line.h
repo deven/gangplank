@@ -12,13 +12,14 @@
 #define _LINE_H 1
 
 // Include files.
+#include "object.h"
 #include "phoenix.h"
 
 // Single input lines waiting to be processed.
-class Line {
+class Line: public Object {
 public:
    const char *line;			// input line
-   Line *next;				// next input line
+   Pointer<Line> next;			// next input line
 
    Line(const char *p) {		// constructor
       line = new char[strlen(p) + 1];

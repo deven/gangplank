@@ -109,6 +109,7 @@ void OpenLog();
 void log_message(const char *format, ...);
 void warn(const char *format, ...);
 void error(const char *format, ...);
+void crash(const char *format, ...);
 const char *message_start(const char *line, char *sendlist, int len,
                           bool &is_explicit);
 int match_name(const char *name, const char *sendlist);

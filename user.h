@@ -12,10 +12,11 @@
 #define _USER_H 1
 
 // Include files.
+#include "object.h"
 #include "phoenix.h"
 
 // Data about a particular user.
-class User {
+class User: public Object {
 public:
    int priv;				// privilege level
    // XXX change! vvv
