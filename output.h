@@ -55,11 +55,13 @@ public:
 class Message: public Output {
 protected:
    Pointer<Name> from;
+   Pointer<Session> to;
    // Pointer<Sendlist> to;
    const char *text;
 public:
-   Message(OutputType type, Name *sender, const char *msg):
-      Output(type, MessageClass), from(sender) {
+   Message(OutputType type, Name *sender, Session *destination,
+           const char *msg):
+      Output(type, MessageClass), from(sender), to(destination) {
       text = new char[strlen(msg) + 1];
       strcpy((char *) text, msg);
    }

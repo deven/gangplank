@@ -189,22 +189,23 @@ const char *message_start(const char *line, char *sendlist, int len,
    return line + (*line == Space);
 }
 
+// Returns position of match or 0.
 int match_name(const char *name, const char *sendlist)
 {
-   const char *p, *q;
+   const char *start, *p, *q;
 
-   if (!*name || !*sendlist) return 0;
-   for (p = name, q = sendlist; *p && *q; p++, q++) {
-      // Let an unquoted underscore match a space or an underscore.
-      if (*q == char(UnquotedUnderscore) &&
-          (*p == Space || *p == Underscore)) continue;
-      if ((isupper(*p) ? tolower(*p) : *p) !=
-          (isupper(*q) ? tolower(*q) : *q)) {
-         // Mis-match, ignoring case. Recurse for middle matches.
-         return match_name(name + 1, sendlist);
+   if (!name || !sendlist || !*name || !*sendlist) return 0;
+   for (start = name; *start; start++) {
+      for (p = start, q = sendlist; *p && *q; p++, q++) {
+         // Let an unquoted underscore match a space or an underscore.
+         if (*q == char(UnquotedUnderscore) &&
+             (*p == Space || *p == Underscore)) continue;
+         if ((isupper(*p) ? tolower(*p) : *p) !=
+             (isupper(*q) ? tolower(*q) : *q)) break;
       }
+      if (!*q) return (start - name) + 1;
    }
-   return !*q;
+   return 0;
 }
 
 void quit(int sig)			// received SIGQUIT or SIGTERM

@@ -22,8 +22,8 @@ LIBS = -lcrypt
 #LDFLAGS =
 
 EXEC = phoenixd
-HDRS = block.h fd.h fdtable.h line.h listen.h name.h object.h outbuf.h \
-       output.h outstr.h phoenix.h session.h telnet.h user.h
+HDRS = block.h fd.h fdtable.h line.h list.h listen.h name.h object.h outbuf.h \
+       output.h outstr.h phoenix.h session.h set.h telnet.h user.h
 SRCS = fdtable.cc listen.cc output.cc outstr.cc phoenix.cc session.cc \
        telnet.cc user.cc
 OBJS = $(SRCS:.cc=.o)

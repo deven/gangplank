@@ -12,11 +12,13 @@
 #define _SESSION_H 1
 
 // Include files.
+#include "list.h"
 #include "object.h"
 #include "outbuf.h"
 #include "output.h"
 #include "outstr.h"
 #include "phoenix.h"
+#include "set.h"
 
 // Data about a particular session.
 class Session: public Object {
@@ -43,6 +45,7 @@ public:
    char default_sendlist[SendlistLen];	// current default sendlist
    char last_sendlist[SendlistLen];	// last explicit sendlist
    char reply_sendlist[SendlistLen];	// reply sendlist for last sender
+   Pointer<Message> last_message;	// last message sent
 
    Session(Telnet *t);			// constructor
    ~Session();				// destructor
@@ -86,6 +89,7 @@ public:
       return Pending.SendNext(telnet);
    }
 
+   Pointer<Session> FindSession(const char *sendlist, Set<Session> &matches);
    void Login(const char *line);	// Process response to login prompt.
    void Password(const char *line);	// Process response to password prompt.
    void DoName(const char *line);	// Process response to name prompt.
