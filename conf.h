@@ -122,11 +122,12 @@ struct block {
 struct telnet {
    struct telnet *next;			/* next telnet connection */
    int fd;				/* file descriptor for TCP connection */
-   struct user *user;			/* link to user structure */
+   struct session *session;		/* link to session structure */
    struct InputBuffer input;		/* pending input */
    struct Line *lines;			/* unprocessed input lines */
    struct OutputBuffer output;		/* pending data output */
    struct OutputBuffer command;		/* pending command output */
+   input_func_ptr input_function;	/* input processor function */
    unsigned char state;			/* state (0/\r/IAC/WILL/WONT/DO/DONT) */
    char undrawn;			/* input line undrawn for output? */
    char blocked;			/* output blocked? (boolean) */
@@ -140,20 +141,25 @@ struct telnet {
    callback_func_ptr RSGA_callback;	/* remote SUPPRESS-GO-AHEAD callback */
 };
 
-/* XXX need session structure? */
-
-/* Data about a particular user. */
-struct user {
-   struct telnet *telnet;		/* telnet connection for this user */
-   input_func_ptr input;		/* input processor function pointer */
-   /* XXX change! vvv  */
-   char user[32];			/* account name */
-   char passwd[32];			/* password for this account */
-   /* XXX change! ^^^ */
+/* Data about a particular session. */
+struct session {
+   struct session *next;		/* next session */
+   struct user *user;			/* user this session belongs to */
+   struct telnet *telnet;		/* telnet connection for this session */
    char name[NAMELEN];			/* current user name (pseudo) */
    char last_sendlist[32];		/* last explicit sendlist */
    time_t login_time;			/* time logged in */
    time_t idle_since;			/* last idle time */
+};
+
+/* Data about a particular user. */
+struct user {
+   int priv;				/* privilege level */
+   /* XXX change! vvv  */
+   char user[32];			/* account name */
+   char passwd[32];			/* password for this account */
+   /* XXX change! ^^^ */
+   char reserved_name[NAMELEN];		/* reserved user name (pseudo) */
 };
 
 /* Function prototypes. */
@@ -198,6 +204,7 @@ int main(int argc, char **argv);
 
 /* Global variables. */
 extern struct telnet *connections;	/* telnet connections */
+extern struct session *sessions;	/* active sessions */
 extern int shutdown_flag;		/* shutdown flag */
 extern int nfds;			/* number of fds available */
 extern fd_set readfds;			/* read fdset for select() */

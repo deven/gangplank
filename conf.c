@@ -12,6 +12,7 @@
 
 /* Global variables. */
 struct telnet *connections;		/* telnet connections */
+struct session *sessions;		/* active sessions */
 int shutdown_flag;			/* shutdown flag */
 int nfds;				/* number of fds available */
 fd_set readfds;				/* read fdset for select() */
@@ -147,13 +148,13 @@ void set_input_function(struct telnet *telnet, input_func_ptr input)
 {
    struct Line *p;
 
-   telnet->user->input = input;
+   telnet->input_function = input;
 
    /* Process lines as long as we still have a defined input function. */
-   while (telnet->user->input && telnet->lines) {
+   while (telnet->input_function && telnet->lines) {
       p = telnet->lines;
       telnet->lines = p->next;
-      telnet->user->input(telnet, p->line);
+      telnet->input_function(telnet, p->line);
       free((void *) p->line);
       free((void *) p);
    }
@@ -550,9 +551,10 @@ void login(struct telnet *telnet, const char *line)
    /* Check against hardcoded logins. */
    /* XXX stuff */
    if (!strcmp(line, "guest")) {
-      strcpy(telnet->user->user, line);
-      strcpy(telnet->user->passwd, "guest");
-      telnet->user->name[0] = 0;
+      strcpy(telnet->session->user->user, line);
+      strcpy(telnet->session->user->passwd, "guest");
+      telnet->session->name[0] = 0;
+      telnet->session->user->priv = 0;
 
       /* Prompt for name. */
       output(telnet, "\nEnter name: ");
@@ -563,9 +565,10 @@ void login(struct telnet *telnet, const char *line)
       return;
    } else if (!strcmp(line, "deven")) {
       /* Password and all other user accounts have been redacted. */
-      strcpy(telnet->user->user, line);
-      strcpy(telnet->user->passwd, "REDACTED");
-      strcpy(telnet->user->name, "Deven");
+      strcpy(telnet->session->user->user, line);
+      strcpy(telnet->session->user->passwd, "REDACTED");
+      strcpy(telnet->session->name, "Deven");
+      telnet->session->user->priv = 100;
    } else {
       output(telnet, "Login incorrect.\n");
       output(telnet, "login: ");
@@ -591,7 +594,7 @@ void password(struct telnet *telnet, const char *line)
    output(telnet, "\n");
 
    /* Check against hardcoded password. */
-   if (strcmp(line, telnet->user->passwd)) {
+   if (strcmp(line, telnet->session->user->passwd)) {
       /* Login incorrect. */
       output(telnet, "Login incorrect.\n");
       output(telnet, "login: ");
@@ -603,7 +606,7 @@ void password(struct telnet *telnet, const char *line)
       set_input_function(telnet, login);
    } else {
       /* XXX stuff */
-      print(telnet, "\nYour default name is \"%s\".\n", telnet->user->name);
+      print(telnet, "\nYour default name is \"%s\".\n", telnet->session->name);
 
       /* Enable echoing. */
       telnet->do_echo = 1;
@@ -620,23 +623,23 @@ void name(struct telnet *telnet, const char *line)
 {
    if (!*line) {
       /* blank line */
-      if (!strcmp(telnet->user->user, "guest")) {
+      if (!strcmp(telnet->session->user->user, "guest")) {
          /* Prompt for name. */
          output(telnet, "\nEnter name: ");
          return;
       }
    } else {
       /* Save user's name. */
-      strncpy(telnet->user->name, line, NAMELEN);
-      telnet->user->name[NAMELEN - 1] = 0;
+      strncpy(telnet->session->name, line, NAMELEN);
+      telnet->session->name[NAMELEN - 1] = 0;
    }
 
    /* Announce entry. */
-   announce("*** %s has entered conf! [%s] ***\n", telnet->user->name,
-            date(time(&telnet->user->login_time), 11, 5));
-   telnet->user->idle_since = telnet->user->login_time;
-   log_message("Enter: %s (%s) on fd #%d.", telnet->user->name,
-               telnet->user->user, telnet->fd);
+   announce("*** %s has entered conf! [%s] ***\n", telnet->session->name,
+            date(time(&telnet->session->login_time), 11, 5));
+   telnet->session->idle_since = telnet->session->login_time;
+   log_message("Enter: %s (%s) on fd #%d.", telnet->session->name,
+               telnet->session->user->user, telnet->fd);
 
    /* Set normal input routine. */
    set_input_function(telnet, process_input);
@@ -645,16 +648,17 @@ void name(struct telnet *telnet, const char *line)
 void process_input(struct telnet *telnet, const char *line)
 {
    if (*line == '!') {
-      if (strcmp(telnet->user->user, "deven")) {
+      /* XXX add !priv command? do individual privilege levels? */
+      if (telnet->session->user->priv < 50) {
          output(telnet, "Sorry, all !commands are privileged.\n");
          return;
       }
       if (!strncmp(line, "!down", 5)) {
          if (!strcmp(line, "!down !")) {
             log_message("Immediate shutdown requested by %s (%s).",
-                        telnet->user->name, telnet->user->user);
+                        telnet->session->name, telnet->session->user->user);
             log_message("Final shutdown warning.");
-            announce("*** %s has shut down conf! ***\n", telnet->user->name);
+            announce("*** %s has shut down conf! ***\n", telnet->session->name);
             announce("%c%c>>> Server shutting down NOW!  Goodbye. <<<\n%c%c",
                      7, 7, 7, 7);
             alarm(5);
@@ -663,10 +667,10 @@ void process_input(struct telnet *telnet, const char *line)
             if (shutdown_flag) {
                shutdown_flag = 0;
                alarm(0);
-               log_message("Shutdown cancelled by %s (%s).",
-                           telnet->user->name, telnet->user->user);
-               announce("*** %s has cancelled the server shutdown. ***\n",
-                        telnet->user->name);
+               log_message("Shutdown canceled by %s (%s).",
+                           telnet->session->name, telnet->session->user->user);
+               announce("*** %s has canceled the server shutdown. ***\n",
+                        telnet->session->name);
             } else {
                output(telnet, "The server was not about to shut down.\n");
             }
@@ -675,8 +679,8 @@ void process_input(struct telnet *telnet, const char *line)
 
             if (sscanf(line + 5, "%d", &i) != 1) i = 30;
             log_message("Shutdown requested by %s (%s) in %d seconds.",
-                        telnet->user->name, telnet->user->user, i);
-            announce("*** %s has shut down conf! ***\n", telnet->user->name);
+                        telnet->session->name, telnet->session->user->user, i);
+            announce("*** %s has shut down conf! ***\n", telnet->session->name);
             announce("%c%c>>> This server will shutdown in %d seconds... "
                      "<<<\n%c%c", 7, 7, i, 7, 7);
             alarm(i);
@@ -694,7 +698,7 @@ void process_input(struct telnet *telnet, const char *line)
             if (t) {
                /* Found user, nuke 'em. */
                print(telnet, "User \"%s\" (%s) on fd #%d has been nuked.\n",
-                     t->user->name, t->user->user, t->fd);
+                     t->session->name, t->session->user->user, t->fd);
 
                if (t->output.head && i > 0) {
                   /* Queued output, try to send it first. */
@@ -787,11 +791,11 @@ void process_input(struct telnet *telnet, const char *line)
 
          if (t) {
             /* Found user, send message. */
-            time(&telnet->user->idle_since); /* reset idle time */
-            print(telnet, "(message sent to %s.)\n", t->user->name);
+            time(&telnet->session->idle_since); /* reset idle time */
+            print(telnet, "(message sent to %s.)\n", t->session->name);
             undraw_line(t);		/* undraw input line */
             print(t, "%c\n >> Private message from %s: [%s]\n - %s\n", 7,
-                  telnet->user->name, date(0, 11, 5), p);
+                  telnet->session->name, date(0, 11, 5), p);
             redraw_line(t);		/* redraw input line */
          } else {
             /* Not found. */
@@ -804,9 +808,9 @@ void process_input(struct telnet *telnet, const char *line)
 
          /* Save or use last sendlist, as appropriate. */
          if (*sendlist) {
-            strcpy(telnet->user->last_sendlist, sendlist);
+            strcpy(telnet->session->last_sendlist, sendlist);
          } else {
-            strcpy(sendlist, telnet->user->last_sendlist);
+            strcpy(sendlist, telnet->session->last_sendlist);
          }
 
          dest = NULL;
@@ -814,12 +818,12 @@ void process_input(struct telnet *telnet, const char *line)
             dest = telnet;
          } else {
             for (t = connections; t; t = t->next) {
-               if (match_name(t->user->name, sendlist)) {
+               if (match_name(t->session->name, sendlist)) {
                   if (dest) {
                      print(telnet, "\"%s\" matches more than one name, "
                            "including \"%s\" and \"%s\". (message not "
-                           "sent)\n", sendlist, dest->user->name,
-                           t->user->name);
+                           "sent)\n", sendlist, dest->session->name,
+                           t->session->name);
                      dest = NULL;
                      break;
                   } else {
@@ -831,11 +835,11 @@ void process_input(struct telnet *telnet, const char *line)
 
          if (dest) {
             /* Found user, send message. */
-            time(&telnet->user->idle_since); /* reset idle time */
-            print(telnet, "(message sent to %s.)\n", dest->user->name);
+            time(&telnet->session->idle_since); /* reset idle time */
+            print(telnet, "(message sent to %s.)\n", dest->session->name);
             undraw_line(dest);		/* undraw input line */
             print(dest, "%c\n >> Private message from %s: [%s]\n - %s\n", 7,
-                  telnet->user->name, date(0, 11, 5), p);
+                  telnet->session->name, date(0, 11, 5), p);
             redraw_line(dest);		/* redraw input line */
          } else {
             if (!t) {
@@ -848,14 +852,14 @@ void process_input(struct telnet *telnet, const char *line)
          /* Send message to everyone. */
          struct telnet *dest;
 
-         time(&telnet->user->idle_since); /* reset idle time */
+         time(&telnet->session->idle_since); /* reset idle time */
          output(telnet, "(message sent to everyone.)\n");
 
          for (dest = connections; dest; dest = dest->next) {
             if (dest != telnet) {
                undraw_line(dest);	/* undraw input line */
                print(dest, "%c\n -> From %s to everyone: [%s]\n - %s\n", 7,
-                     telnet->user->name, date(0, 11, 5), line);
+                     telnet->session->name, date(0, 11, 5), line);
                redraw_line(dest);	/* redraw input line */
             }
          }
@@ -875,13 +879,15 @@ void who_cmd(struct telnet *telnet)
 
    /* Output data about each user. */
    for (t = connections; t; t = t->next) {
-      idle = (time(NULL) - t->user->idle_since) / 60;
+      idle = (time(NULL) - t->session->idle_since) / 60;
       if (idle) {
-         print(telnet, " %-32s  %8s  %4d  %-8s  %2d\n", t->user->name,
-               date(t->user->login_time, 11, 8), idle, t->user->user, t->fd);
+         print(telnet, " %-32s  %8s  %4d  %-8s  %2d\n", t->session->name,
+               date(t->session->login_time, 11, 8), idle,
+               t->session->user->user, t->fd);
       } else {
-         print(telnet, " %-32s  %8s        %-8s  %2d\n", t->user->name,
-               date(t->user->login_time, 11, 8), t->user->user, t->fd);
+         print(telnet, " %-32s  %8s        %-8s  %2d\n", t->session->name,
+               date(t->session->login_time, 11, 8), t->session->user->user,
+               t->fd);
       }
    }
 }
@@ -889,6 +895,7 @@ void who_cmd(struct telnet *telnet)
 void new_connection(int lfd)		/* accept a new connection */
 {
    struct telnet *telnet;		/* new telnet data structure */
+   struct session *session;		/* new session data structure */
    struct user *user;			/* new user data structure */
    struct sockaddr_in saddr;		/* for getpeername() */
    socklen_t saddrlen;			/* for getpeername() */
@@ -924,13 +931,14 @@ void new_connection(int lfd)		/* accept a new connection */
    telnet = (struct telnet *) alloc(sizeof(struct telnet));
    /* telnet->next initialized below */
    telnet->fd = fd;			/* save file descriptor */
-   /* telnet->user initialized below */
+   /* telnet->session initialized below */
    /* telnet->input initialized below */
    telnet->lines = NULL;		/* no pending input lines */
    telnet->output.head = NULL;		/* no output data yet */
    telnet->output.tail = NULL;
    telnet->command.head = NULL;		/* no command data yet */
    telnet->command.tail = NULL;
+   telnet->input_function = NULL;	/* no input function yet */
    telnet->state = 0;			/* telnet input state = 0 (data) */
    telnet->undrawn = 0;			/* line not undrawn for output */
    telnet->blocked = 0;			/* output not blocked */
@@ -951,16 +959,26 @@ void new_connection(int lfd)		/* accept a new connection */
    telnet->next = connections;
    connections = telnet;
 
+   /* Initialize session structure. */
+   session = telnet->session = (struct session *) alloc(sizeof(struct session));
+   /* session->next initialized below */
+   /* session->user initialized below */
+   session->telnet = telnet;		/* link back to telnet structure */
+   strcpy(session->name, "[logging in]"); /* no name yet */
+   session->last_sendlist[0] = 0;	/* no previous sendlist yet */
+   session->login_time = time(&now);	/* not logged in yet */
+   session->idle_since = now;		/* reset idle time */
+
+   /* Link new session into list. */
+   session->next = sessions;
+   sessions = session;
+
    /* Initialize user structure. */
-   user = telnet->user = (struct user *) alloc(sizeof(struct user));
-   user->telnet = telnet;		/* point back to telnet structure */
-   user->input = NULL;			/* no input routine yet */
+   user = session->user = (struct user *) alloc(sizeof(struct user));
+   user->priv = 10;			/* default user privilege level */
    strcpy(user->user, "[nobody]");	/* no user name yet */
    user->passwd[0] = 0;			/* no password yet */
-   strcpy(user->name, "[logging in]");	/* no name yet */
-   user->last_sendlist[0] = 0;		/* no previous sendlist yet */
-   user->login_time = time(&now);	/* not logged in yet */
-   user->idle_since = now;		/* reset idle time */
+   user->reserved_name[0] = 0;		/* no reserved name yet */
 
    /* Select new connection for reading. */
    FD_SET(fd, &readfds);
@@ -983,14 +1001,14 @@ void close_connection(struct telnet *telnet)
       while (telnet2 && telnet2->next != telnet) telnet2 = telnet2->next;
       telnet2->next = telnet->next;
    }
-   if (strcmp(telnet->user->name, "[logging in]")) {
-      announce("*** %s has left conf! [%s] ***\n", telnet->user->name,
+   if (strcmp(telnet->session->name, "[logging in]")) {
+      announce("*** %s has left conf! [%s] ***\n", telnet->session->name,
                date(0, 11, 5));
-      log_message("Exit: %s (%s) on fd #%d.", telnet->user->name,
-                  telnet->user->user, telnet->fd);
+      log_message("Exit: %s (%s) on fd #%d.", telnet->session->name,
+                  telnet->session->user->user, telnet->fd);
    }
    close(telnet->fd);			/* Close the connection. */
-   free_user(telnet->user);		/* Free user structure. */
+   free_user(telnet->session->user);	/* Free user structure. */
    free((void *) telnet->input.data);	/* Free input line buffer. */
 
    /* Free blocks in command output queue. */
@@ -1358,8 +1376,8 @@ void input_ready(struct telnet *telnet)	/* telnet stream can input data */
                   telnet->input.free = telnet->input.data;
 
                   /* Call user and state-specific input line processor. */
-                  if (telnet->user->input) {
-                     telnet->user->input(telnet, telnet->input.data);
+                  if (telnet->input_function) {
+                     telnet->input_function(telnet, telnet->input.data);
                   } else {
                      save_input_line(telnet, telnet->input.data);
                   }
@@ -1532,6 +1550,7 @@ int main(int argc, char **argv)		/* main program */
 
    shutdown_flag = 0;
    connections = NULL;
+   sessions = NULL;
    free_blocks = NULL;
    if (!(logfile = fopen("log", "a"))) error("log");
    setlinebuf(logfile);
