@@ -41,10 +41,7 @@ FDTable::~FDTable()			// destructor
 void FDTable::OpenListen(int port)	// Open a listening port.
 {
    Pointer<Listen> l = new Listen(port);
-   if (l->fd < 0 || l->fd >= size) {
-      error("FDTable::OpenListen(port = %d): fd #%d: range error! [0-%d]",
-            port, l->fd, size - 1);
-   }
+   if (l->fd == -1) return;
    if (l->fd >= used) used = l->fd + 1;
    array[l->fd] = l;
    l->ReadSelect();
@@ -53,11 +50,7 @@ void FDTable::OpenListen(int port)	// Open a listening port.
 void FDTable::OpenTelnet(int lfd)	// Open a telnet connection.
 {
    Pointer<Telnet> t = new Telnet(lfd);
-   if (t->fd < 0 || t->fd >= size) {
-      warn("FDTable::OpenTelnet(lfd = %d): fd #%d: range error! [0-%d]", lfd,
-           t->fd, size - 1);
-      return;
-   }
+   if (t->fd == -1) return;
    if (t->fd >= used) used = t->fd + 1;
    array[t->fd] = t;
 }
@@ -103,7 +96,7 @@ void FDTable::Select()			// Select across all ready connections.
          InputReady(fd);
          found--;
       }
-      if (FD_ISSET(fd, &wfds) && fd < used) {
+      if (FD_ISSET(fd, &wfds)) {
          OutputReady(fd);
          found--;
       }
@@ -112,17 +105,10 @@ void FDTable::Select()			// Select across all ready connections.
 
 void FDTable::InputReady(int fd)	// Input ready on file descriptor fd.
 {
-   if (fd < 0 || fd >= used) {
-      error("FDTable::InputReady(fd = %d): range error! [0-%d]", fd, used - 1);
-   }
-   array[fd]->InputReady(fd);
+   if (array[fd]) array[fd]->InputReady();
 }
 
 void FDTable::OutputReady(int fd)	// Output ready on file descriptor fd.
 {
-   if (fd < 0 || fd >= used) {
-      error("FDTable::OutputReady(fd = %d): range error! [0-%d]", fd,
-            used - 1);
-   }
-   array[fd]->OutputReady(fd);
+   if (array[fd]) array[fd]->OutputReady();
 }

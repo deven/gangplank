@@ -30,8 +30,8 @@ public:
    static void Select() {		// Select across all ready connections.
       fdtable.Select();
    }
-   virtual void InputReady(int fd) = 0;	// Input ready on file descriptor fd.
-   virtual void OutputReady(int fd) = 0; // Output ready on file descriptor fd.
+   virtual void InputReady() = 0;	// Input ready on file descriptor fd.
+   virtual void OutputReady() = 0;	// Output ready on file descriptor fd.
    virtual void Closed() = 0;		// Connection is closed.
    virtual ~FD() {}			// destructor
    void NonBlocking() {			// Place fd in non-blocking mode.
@@ -46,16 +46,16 @@ public:
       }
    }
    void ReadSelect() {			// Select fd for reading.
-      fdtable.ReadSelect(fd);
+      if (fd != -1) fdtable.ReadSelect(fd);
    }
    void NoReadSelect() {		// Do not select fd for reading.
-      fdtable.NoReadSelect(fd);
+      if (fd != -1) fdtable.NoReadSelect(fd);
    }
    void WriteSelect() {			// Select fd for writing.
-      fdtable.WriteSelect(fd);
+      if (fd != -1) fdtable.WriteSelect(fd);
    }
    void NoWriteSelect() {		// Do not select fd for writing.
-      fdtable.NoWriteSelect(fd);
+      if (fd != -1) fdtable.NoWriteSelect(fd);
    }
 };
 

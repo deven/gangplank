@@ -618,13 +618,14 @@ inline void Telnet::transpose_chars()	// Exchange two characters at point.
    }
 }
 
-void Telnet::InputReady(int fd)		// Telnet stream can input data.
+void Telnet::InputReady()		// Telnet stream can input data.
 {
    char buf[BufSize];
    Block *block;
    register const char *from, *from_end;
    register int n;
 
+   if (fd == -1) return;
    n = read(fd, buf, BufSize);
    switch (n) {
    case -1:
@@ -951,10 +952,12 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
    if (closing && !outstanding && !Command.head && !Output.head) Closed();
 }
 
-void Telnet::OutputReady(int fd)	// Telnet stream can output data.
+void Telnet::OutputReady()		// Telnet stream can output data.
 {
    Block *block;
    register int n;
+
+   if (fd == -1) return;
 
    // Send command data, if any.
    while (Command.head) {

@@ -24,10 +24,10 @@ public:
    static void Open(int port);		// Open a listening port.
    Listen(int port);			// constructor
    ~Listen();				// destructor
-   void InputReady(int fd) {		// Input ready on file descriptor fd.
-      fdtable.OpenTelnet(fd);		// Accept pending telnet connection.
+   void InputReady() {			// Input ready on file descriptor fd.
+      if (fd != -1) fdtable.OpenTelnet(fd); // Accept pending telnet connection.
    }
-   void OutputReady(int fd) {		// Output ready on file descriptor fd.
+   void OutputReady() {			// Output ready on file descriptor fd.
       error("Listen::OutputReady(fd = %d): invalid operation!", fd);
    }
    void Closed();			// Connection is closed.

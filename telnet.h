@@ -141,8 +141,8 @@ public:
    void erase_char();			// Erase input character before point.
    void delete_char();			// Delete character at point.
    void transpose_chars();		// Transpose characters at point.
-   void InputReady(int fd);		// Telnet stream can input data.
-   void OutputReady(int fd);		// Telnet stream can output data.
+   void InputReady();			// Telnet stream can input data.
+   void OutputReady();			// Telnet stream can output data.
 };
 
 #endif // telnet.h
