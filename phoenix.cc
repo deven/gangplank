@@ -129,7 +129,6 @@ const char *message_start(const char *line, char *sendlist, int len,
                           bool &is_explicit)
 {
    const char *p;
-   char state;
    int i;
 
    is_explicit = false;			// Assume implicit sendlist.
@@ -151,50 +150,40 @@ const char *message_start(const char *line, char *sendlist, int len,
    }
 
    // Doesn't appear to be a smiley, check for explicit sendlist.
-   state = 0;
    i = 0;
    len--;
    for (p = line; *p; p++) {
-      switch (state) {
-      case 0:
-         switch (*p) {
-         case Space:
-         case Tab:
-            strcpy(sendlist, "default");
-            return line + (*line == Space);
-         case Colon:
-         case Semicolon:
-            sendlist[i] = 0;
-            if (*++p == Space) p++;
-            is_explicit = true;
-            return p;
-         case Backslash:
-            state = Backslash;
-            break;
-         case Quote:
-            state = Quote;
-            break;
-         case Underscore:
-            if (i < len) sendlist[i++] = UnquotedUnderscore;
-            break;
-         default:
-            if (i < len) sendlist[i++] = *p;
-            break;
-         }
-         break;
+      switch (*p) {
+      case Space:
+      case Tab:
+         strcpy(sendlist, "default");
+         return line + (*line == Space);
+      case Colon:
+      case Semicolon:
+         sendlist[i] = 0;
+         if (*++p == Space) p++;
+         is_explicit = true;
+         return p;
       case Backslash:
-         if (i < len) sendlist[i++] = *p;
-         state = 0;
+         if (*++p && i < len) sendlist[i++] = *p;
          break;
       case Quote:
          while (*p) {
             if (*p == Quote) {
-               state = 0;
                break;
+            } else if (*p == Backslash) {
+               if (*++p && i < len) sendlist[i++] = *p;
             } else {
-               if (i < len) sendlist[i++] = *p++;
+               if (i < len) sendlist[i++] = *p;
             }
+            p++;
          }
+         break;
+      case Underscore:
+         if (i < len) sendlist[i++] = UnquotedUnderscore;
+         break;
+      default:
+         if (i < len) sendlist[i++] = *p;
          break;
       }
    }
