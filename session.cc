@@ -876,13 +876,21 @@ void Session::SendPrivate(const char *sendlist, const char *msg)
       return;
    }
 
-   Session *session;
-   Session *dest = NULL;
    int matches = 0;
+   Session *session, *dest, *extra;
    for (session = sessions; session; session = session->next) {
-      if (match_name(session->name_only, sendlist)) {
-         if (matches++) break;
+      if (strcasecmp(session->name_only, sendlist)) {
+         if (match_name(session->name_only, sendlist)) {
+            if (matches++) {
+               extra = session;
+            } else {
+               dest = session;
+            }
+         }
+      } else {				// Found exact match; use it.
          dest = session;
+         matches = 1;
+         break;
       }
    }
 
@@ -901,7 +909,7 @@ void Session::SendPrivate(const char *sendlist, const char *msg)
    default:				// Multiple matches.
       print("\a\a\"%s\" matches %d names, including \"%s\" and \"%s\". "
             "(message not sent)\n", sendlist, matches, dest->name_only,
-            session->name_only);
+            extra->name_only);
       break;
    }
 }
