@@ -12,6 +12,7 @@
 #define _FD_H 1
 
 // Include files.
+#include "fdtable.h"
 #include "phoenix.h"
 
 // Types of FD subclasses.
@@ -19,10 +20,15 @@ enum FDType {UnknownFD, ListenFD, TelnetFD};
 
 // Data about a particular file descriptor.
 class FD {
+protected:
+   static FDTable fdtable;		// File descriptor table.
 public:
    FDType type;				// type of file descriptor
    int fd;				// file descriptor
 
+   static void Select() {		// Select across all ready connections.
+      fdtable.Select();
+   }
    virtual void InputReady(int fd) = 0;	// Input ready on file descriptor fd.
    virtual void OutputReady(int fd) = 0; // Output ready on file descriptor fd.
    virtual void output(const char *buf) {} // queue output data
@@ -39,16 +45,16 @@ public:
       }
    }
    void ReadSelect() {			// Select fd for reading.
-      FD_SET(fd, &readfds);
+      fdtable.ReadSelect(fd);
    }
    void NoReadSelect() {		// Do not select fd for reading.
-      FD_CLR(fd, &readfds);
+      fdtable.NoReadSelect(fd);
    }
    void WriteSelect() {			// Select fd for writing.
-      FD_SET(fd, &writefds);
+      fdtable.WriteSelect(fd);
    }
    void NoWriteSelect() {		// Do not select fd for writing.
-      FD_CLR(fd, &writefds);
+      fdtable.NoWriteSelect(fd);
    }
 };
 

@@ -13,6 +13,11 @@
 #include "phoenix.h"
 #include "telnet.h"
 
+void Listen::Open(int port)
+{
+   fdtable.OpenListen(port);
+}
+
 Listen::Listen(int port)		// Listen on a port.
 {
    const int Backlog = 8;		// backlog on socket (for listen())

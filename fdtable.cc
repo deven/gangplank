@@ -15,10 +15,14 @@
 #include "telnet.h"
 #include "user.h"
 
-static char buf[BufSize];		// XXX temporary buffer
+FDTable FD::fdtable;			// File descriptor table.
+fd_set FDTable::readfds;		// read fdset for select()
+fd_set FDTable::writefds;		// write fdset for select()
 
 FDTable::FDTable()			// constructor
 {
+   FD_ZERO(&readfds);
+   FD_ZERO(&writefds);
    used = 0;
    size = getdtablesize();
    array = new FD *[size];
@@ -58,12 +62,12 @@ void FDTable::OpenTelnet(int lfd)	// Open a telnet connection.
    array[t->fd] = t;
 }
 
-void FDTable::Close(int fd)		// Close fd.
+FD *FDTable::Closed(int fd)		// Close fd, return FD object pointer.
 {
    if (fd < 0 || fd >= used) {
-      error("FDTable::Close(fd = %d): range error! [0-%d]", fd, used - 1);
+      error("FDTable::Closed(fd = %d): range error! [0-%d]", fd, used - 1);
    }
-   delete array[fd];
+   FD *FD = array[fd];
    array[fd] = NULL;
    if (fd == used - 1) {		// Fix highest used index if necessary.
       while (used > 0) {
@@ -73,6 +77,12 @@ void FDTable::Close(int fd)		// Close fd.
          }
       }
    }
+   return FD;
+}
+
+void FDTable::Close(int fd)		// Close fd, deleting FD object.
+{
+   delete Closed(fd);
 }
 
 void FDTable::Select()			// Select across all ready connections.
@@ -118,15 +128,11 @@ void FDTable::OutputReady(int fd)	// Output ready on file descriptor fd.
    array[fd]->OutputReady(fd);
 }
 
-// Send announcement to everyone.  (Formatted write to all connections.)
-void FDTable::announce(const char *format, ...)
+// Unformatted write to all connections.
+void FDTable::announce(const char *buf)
 {
    Telnet *t;
-   va_list ap;
 
-   va_start(ap, format);
-   (void) vsprintf(buf, format, ap);
-   va_end(ap);
    for (int i = 0; i < used; i++) {
       if ((t = (Telnet *) array[i]) && t->type == TelnetFD) {
          t->OutputWithRedraw(buf);
@@ -150,107 +156,5 @@ void FDTable::nuke(Telnet *telnet, int fd, int drain)
       t->nuke(telnet, drain);
    } else {
       telnet->print("There is no user on fd #%d.\n", fd);
-   }
-}
-
-// Send private message by fd #.
-void FDTable::SendByFD(Telnet *telnet, int fd, const char *sendlist,
-                       int is_explicit, const char *msg)
-{
-   Telnet *t;
-
-   // Save last sendlist if explicit.
-   if (is_explicit && *sendlist) {
-      strncpy(telnet->session->last_sendlist, sendlist, SendlistLen);
-      telnet->session->last_sendlist[SendlistLen - 1] = 0;
-   }
-
-   if ((t = (Telnet *) array[fd]) && t->type == TelnetFD) {
-      telnet->session->ResetIdle(10);	// reset idle time
-      telnet->print("(message sent to %s.)\n", t->session->name);
-      t->PrintMessage(Private, telnet->session->name,
-                      telnet->session->name_only, NULL, msg);
-   } else {
-      telnet->print("%c%cThere is no user on fd #%d. (message not sent)\n",
-                    Bell, Bell, fd);
-   }
-}
-
-// Send public message to everyone.
-void FDTable::SendEveryone(Telnet *telnet, const char *msg)
-{
-   Session *s;
-   int sent;
-
-   telnet->session->ResetIdle(10);	// reset idle time
-
-   sent = 0;
-   for (s = sessions; s; s = s->next) {
-      if (s->telnet != telnet) {
-         sent++;
-         s->telnet->PrintMessage(Public, telnet->session->name,
-                                 telnet->session->name_only, NULL, msg);
-      }
-   }
-
-   switch (sent) {
-   case 0:
-      telnet->print("%c%cThere is no one else here! (message not sent)\n",
-                    Bell, Bell);
-      break;
-   case 1:
-      telnet->print("(message sent to everyone.) [1 person]\n");
-      break;
-   default:
-      telnet->print("(message sent to everyone.) [%d people]\n", sent);
-      break;
-   }
-}
-
-// Send private message by partial name match.
-void FDTable::SendPrivate(Telnet *telnet, const char *sendlist, int is_explicit,
-                          const char *msg)
-{
-   Telnet *t, *dest;
-   int matches, i;
-
-   // Save last sendlist if explicit.
-   if (is_explicit && *sendlist) {
-      strncpy(telnet->session->last_sendlist, sendlist, SendlistLen);
-      telnet->session->last_sendlist[SendlistLen - 1] = 0;
-   }
-
-   if (!strcmp(sendlist, "me")) {
-      matches = 1;
-      dest = telnet;
-   } else {
-      matches = 0;
-      for (i = 0; i < used; i++) {
-         if ((t = (Telnet *) array[i]) && t->type == TelnetFD &&
-             match_name(t->session->name_only, sendlist)) {
-            dest = t;
-            matches++;
-         }
-      }
-   }
-
-   switch (matches) {
-   case 0:				// No matches.
-      for (unsigned char *p = (unsigned char *) sendlist; *p; p++) {
-         if (*p == UnquotedUnderscore) *p = Underscore;
-      }
-      telnet->print("%c%cNo names matched \"%s\". (message not sent)\n",
-                    Bell, Bell, sendlist);
-      break;
-   case 1:				// Found single match, send message.
-      telnet->session->ResetIdle(10);	// reset idle time
-      telnet->print("(message sent to %s.)\n", dest->session->name);
-      dest->PrintMessage(Private, telnet->session->name,
-                         telnet->session->name_only, NULL, msg);
-      break;
-   default:				// Multiple matches.
-      telnet->print("\"%s\" matches %d names, including \"%s\". (message not "
-                    "sent)\n", sendlist, matches, dest->session->name_only);
-      break;
    }
 }

@@ -21,6 +21,7 @@ class Listen: public FD {
 protected:
    void RequestShutdown(int port);	// Connect to port, request shutdown.
 public:
+   static void Open(int port);		// Open a listening port.
    Listen(int port);			// constructor
    ~Listen() {				// destructor
       if (fd != -1) close(fd);

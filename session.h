@@ -32,6 +32,16 @@ public:
    Session(Telnet *t);			// constructor
    ~Session();				// destructor
    int ResetIdle(int min);		// Reset/return idle time, maybe report.
+
+   // Send public message to everyone.
+   void SendEveryone(const char *msg);
+
+   // Send private message by fd #.
+   void SendByFD(int fd, const char *sendlist, int is_explicit,
+                 const char *msg);
+
+   // Send private message by partial name match.
+   void SendPrivate(const char *sendlist, int is_explicit, const char *msg);
 };
 
 #endif // session.h

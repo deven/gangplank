@@ -9,7 +9,9 @@
 
 // Include files.
 #include "block.h"
+#include "fd.h"
 #include "fdtable.h"
+#include "listen.h"
 #include "phoenix.h"
 #include "session.h"
 #include "telnet.h"
@@ -18,9 +20,6 @@
 // Global variables.
 Session *sessions;			// active sessions
 int Shutdown;				// shutdown flag
-FDTable fdtable;			// File descriptor table.
-fd_set readfds;				// read fdset for select()
-fd_set writefds;			// write fdset for select()
 FILE *logfile;				// log file
 
 // XXX Should logfile use non-blocking code instead?
@@ -433,9 +432,9 @@ void process_input(Telnet *telnet, const char *line)
                         telnet->session->name_only,
                         telnet->session->user->user);
             log_message("Final shutdown warning.");
-            fdtable.announce("*** %s has shut down Phoenix! ***\n",
+            Telnet::announce("*** %s has shut down Phoenix! ***\n",
                              telnet->session->name);
-            fdtable.announce("%c%c>>> Server shutting down NOW!  Goodbye. <<<\n"
+            Telnet::announce("%c%c>>> Server shutting down NOW!  Goodbye. <<<\n"
                              "%c%c", Bell, Bell, Bell, Bell);
             alarm(5);
             Shutdown = 2;
@@ -446,7 +445,7 @@ void process_input(Telnet *telnet, const char *line)
                log_message("Shutdown cancelled by %s (%s).",
                            telnet->session->name_only,
                            telnet->session->user->user);
-               fdtable.announce("*** %s has cancelled the server shutdown. ***"
+               Telnet::announce("*** %s has cancelled the server shutdown. ***"
                                 "\n", telnet->session->name);
             } else {
                telnet->output("The server was not about to shut down.\n");
@@ -458,9 +457,9 @@ void process_input(Telnet *telnet, const char *line)
             log_message("Shutdown requested by %s (%s) in %d seconds.",
                         telnet->session->name_only,
                         telnet->session->user->user, i);
-            fdtable.announce("*** %s has shut down Phoenix! ***\n",
+            Telnet::announce("*** %s has shut down Phoenix! ***\n",
                              telnet->session->name);
-            fdtable.announce("%c%c>>> This server will shutdown in %d "
+            Telnet::announce("%c%c>>> This server will shutdown in %d "
                              "seconds... <<<\n%c%c", Bell, Bell, i, Bell, Bell);
             alarm(i);
             Shutdown = 1;
@@ -469,7 +468,7 @@ void process_input(Telnet *telnet, const char *line)
          int i;
 
          if (sscanf(line + 6, "%d", &i) == 1) {
-            fdtable.nuke(telnet, i < 0 ? -i : i, i >= 0);
+            Telnet::nuke(telnet, i < 0 ? -i : i, i >= 0);
          } else {
             telnet->print("Bad fd #: \"%s\"\n", line + 6);
          }
@@ -665,11 +664,11 @@ void process_input(Telnet *telnet, const char *line)
       }
 
       if (sscanf(sendlist, "#%d%c", &i, &c) == 1) {
-         fdtable.SendByFD(telnet, i, sendlist, is_explicit, p);
+         telnet->session->SendByFD(i, sendlist, is_explicit, p);
       } else if (!strcmp(sendlist, "everyone")) {
-         fdtable.SendEveryone(telnet, p);
+         telnet->session->SendEveryone(p);
       } else {
-         fdtable.SendPrivate(telnet, sendlist, is_explicit, p);
+         telnet->session->SendPrivate(sendlist, is_explicit, p);
       }
    }
 }
@@ -718,7 +717,7 @@ void who_cmd(Telnet *telnet)
 void quit(int sig)			// received SIGQUIT or SIGTERM
 {
    log_message("Shutdown requested by signal in 30 seconds.");
-   fdtable.announce("%c%c>>> This server will shutdown in 30 seconds... <<<"
+   Telnet::announce("%c%c>>> This server will shutdown in 30 seconds... <<<"
                     "\n%c%c", Bell, Bell, Bell, Bell);
    alarm(30);
    Shutdown = 1;
@@ -730,7 +729,7 @@ void alrm(int sig)			// received SIGALRM
    if (Shutdown) {
       if (Shutdown == 1) {
          log_message("Final shutdown warning.");
-         fdtable.announce("%c%c>>> Server shutting down NOW!  Goodbye. <<<"
+         Telnet::announce("%c%c>>> Server shutting down NOW!  Goodbye. <<<"
                           "\n%c%c", Bell, Bell, Bell, Bell);
          alarm(5);
          Shutdown++;
@@ -750,9 +749,7 @@ int main(int argc, char **argv)		// main program
    sessions = NULL;
    if (chdir(HOME)) error(HOME);
    OpenLog();
-   FD_ZERO(&readfds);
-   FD_ZERO(&writefds);
-   fdtable.OpenListen(Port);
+   Listen::Open(Port);
 
    // fork subprocess and exit parent
    if (argc < 2 || strcmp(argv[1], "-debug")) {
@@ -793,6 +790,6 @@ int main(int argc, char **argv)		// main program
          if (logfile) fclose(logfile);
          exit(0);
       }
-      fdtable.Select();
+      FD::Select();
    }
 }

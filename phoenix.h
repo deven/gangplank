@@ -127,9 +127,6 @@ int main(int argc, char **argv);
 // Global variables.
 extern Session *sessions;		// active sessions
 extern int Shutdown;			// shutdown flag
-extern FDTable fdtable;			// File descriptor table.
-extern fd_set readfds;			// read fdset for select()
-extern fd_set writefds;			// write fdset for select()
 extern FILE *logfile;			// log file
 
 #endif // phoenix.h

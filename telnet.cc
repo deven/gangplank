@@ -19,6 +19,23 @@ static char buf[BufSize];		// XXX temporary buffer
 
 static char inbuf[BufSize];		// XXX input buffer
 
+// Formatted write to all connections.
+void Telnet::announce(const char *format, ...)
+{
+   char buf[BufSize];
+   va_list ap;
+
+   va_start(ap, format);
+   (void) vsprintf(buf, format, ap);
+   va_end(ap);
+   fdtable.announce(buf);
+}
+
+void Telnet::nuke(Telnet *telnet, int fd, int drain)
+{
+   fdtable.nuke(telnet, fd, drain);
+}
+
 void Telnet::Drain()			// Drain connection, then close.
 {
    blocked = false;
@@ -329,10 +346,12 @@ Telnet::~Telnet()
    delete session;			// Free session structure.
    delete data;				// Free input line buffer.
 
-   if (fd != -1) close(fd);		// Close connection.
-
-   NoReadSelect();			// Don't select closed connections!
-   NoWriteSelect();
+   if (fd != -1) {			// Skip all this if there's no connection.
+      fdtable.Closed(fd);		// Remove from FDTable.
+      close(fd);			// Close connection.
+      NoReadSelect();			// Don't select closed connections!
+      NoWriteSelect();
+   }
 }
 
 // Nuke a user (force close connection).
@@ -635,9 +654,9 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
 
                // Initiate shutdown.
                log_message("Shutdown requested by new server in 30 seconds.");
-               fdtable.announce("%c%c>>> A new server is starting.  This "
-                                "server will shutdown in 30 seconds... <<<"
-                                "\n%c%c", Bell, Bell, Bell, Bell);
+               announce("%c%c>>> A new server is starting.  This server will "
+                        "shutdown in 30 seconds... <<<\n%c%c", Bell, Bell,
+                        Bell, Bell);
                alarm(30);
                Shutdown = 1;
                break;
