@@ -40,6 +40,9 @@
 #define NAMELEN 33
 #define PORT 6789
 
+/* Special codes. */
+#define UNQUOTED_UNDERSCORE 128
+
 /* For compatibility. */
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK EAGAIN
@@ -147,6 +150,7 @@ struct session {
    struct user *user;			/* user this session belongs to */
    struct telnet *telnet;		/* telnet connection for this session */
    char name[NAMELEN];			/* current user name (pseudo) */
+   char default_sendlist[32];		/* current default sendlist */
    char last_sendlist[32];		/* last explicit sendlist */
    time_t login_time;			/* time logged in */
    time_t idle_since;			/* last idle time */
@@ -178,7 +182,8 @@ void output(struct telnet *telnet, const char *buf);
 void print(struct telnet *telnet, const char *format, ...);
 void announce(const char *format, ...);
 void put_command(struct telnet *telnet, int cmd);
-const char *message_start(const char *line, char *sendlist, int len);
+const char *message_start(const char *line, char *sendlist, int len,
+                          int *is_explicit);
 int match_name(const char *name, const char *sendlist);
 void echo(struct telnet *telnet, callback_func_ptr callback, int state);
 void LSGA(struct telnet *telnet, callback_func_ptr callback, int state);
