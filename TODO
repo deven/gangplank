@@ -10,11 +10,7 @@ word wrapping
 
 real accounts
 
-server echoing
-
 telnet linemode option
-
-line editing and redraw
 
 session layer (multi-session<->multi-user?)
 
@@ -31,8 +27,6 @@ no go aheads unless sga *refused*  no block at least
 check options against 0 or 3,could be 1 or 2!!
 
 make user accounts
-
-privilege levels
 
 allow changed privileges with a !command
 
