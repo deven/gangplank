@@ -73,6 +73,8 @@ public:
    OutputBuffer Command;		// pending command output
    InputFuncPtr InputFunc;		// input processor function
    unsigned char state;			// state (0/\r/IAC/WILL/WONT/DO/DONT)
+   bool SignalPublic;			// Signal for public messages?
+   bool SignalPrivate;			// Signal for private messages?
    bool undrawn;			// input line undrawn for output?
    bool blocked;			// output blocked?
    bool closing;			// connection closing?

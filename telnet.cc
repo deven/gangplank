@@ -201,10 +201,12 @@ void Telnet::PrintMessage(MessageType type, const char *from,
    session->reply_sendlist[SendlistLen - 1] = 0;
    switch (type) {
    case Public:
-      PrintWithRedraw("%c\n -> From %s to everyone: [%s]\n - %s\n", Bell, from, date(0, 11, 5), msg);
+      if (SignalPublic) output(Bell);
+      PrintWithRedraw("\n -> From %s to everyone: [%s]\n - %s\n", from, date(0, 11, 5), msg);
       break;
    case Private:
-      PrintWithRedraw("%c\n >> Private message from %s: [%s]\n - %s\n", Bell, from, date(0, 11, 5), msg);
+      if (SignalPrivate) output(Bell);
+      PrintWithRedraw("\n >> Private message from %s: [%s]\n - %s\n", from, date(0, 11, 5), msg);
       break;
    }
 }
@@ -258,6 +260,8 @@ Telnet::Telnet(int lfd)			// Telnet constructor.
    mark = NULL;				// No mark set initially.
    prompt = NULL;			// No prompt initially.
    prompt_len = 0;			// Length of prompt
+   SignalPublic = true;			// Default public signal on. (for now)
+   SignalPrivate = true;		// Default private signal on.
    lines = NULL;			// No pending input lines.
    InputFunc = NULL;			// No input function.
    state = 0;				// telnet input state = 0 (data)

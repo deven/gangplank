@@ -500,6 +500,44 @@ void process_input(Telnet *telnet, const char *line)
       } else if (!strcmp(line, "/date")) {
          // Print current date and time.
          telnet->print("%s\n", date(0, 0, 0));
+      } else if (!strncmp(line, "/signal", 7)) {
+         const char *p = line + 7;
+         while (*p && isspace(*p)) p++;
+         if (!strncmp(p, "on", 2)) {
+            telnet->SignalPublic = true;
+            telnet->SignalPrivate = true;
+            telnet->output("All signals are now on.\n");
+         } else if (!strncmp(p, "off", 3)) {
+            telnet->SignalPublic = false;
+            telnet->SignalPrivate = false;
+            telnet->output("All signals are now off.\n");
+         } else if (!strncmp(p, "public", 6)) {
+            p += 6;
+            while (*p && isspace(*p)) p++;
+            if (!strncmp(p, "on", 2)) {
+               telnet->SignalPublic = true;
+               telnet->output("Signals for public messages are now on.\n");
+            } else if (!strncmp(p, "off", 3)) {
+               telnet->SignalPublic = false;
+               telnet->output("Signals for public messages are now off.\n");
+            } else {
+               telnet->output("/signal public syntax error!\n");
+            }
+         } else if (!strncmp(p, "private", 7)) {
+            p += 7;
+            while (*p && isspace(*p)) p++;
+            if (!strncmp(p, "on", 2)) {
+               telnet->SignalPrivate = true;
+               telnet->output("Signals for private messages are now on.\n");
+            } else if (!strncmp(p, "off", 3)) {
+               telnet->SignalPrivate = false;
+               telnet->output("Signals for private messages are now off.\n");
+            } else {
+               telnet->output("/signal private syntax error!\n");
+            }
+         } else {
+            telnet->output("/signal syntax error!\n");
+         }
       } else if (!strncmp(line, "/send", 5)) {
          const char *p = line + 5;
          while (*p && isspace(*p)) p++;
@@ -569,6 +607,7 @@ void process_input(Telnet *telnet, const char *line)
                         "/date -- display current date and time\n"
                         "/help -- gives this thrilling message\n"
                         "/send -- specify default sendlist\n"
+                        "/signal -- turns public/private signals on/off\n"
                         "/who -- gives a list of who is connected\n"
                         "No other /commands are implemented yet. "
                         "(except /why)\n\n"
