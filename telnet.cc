@@ -799,6 +799,37 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
             // Throw away next character.
             state = 0;
             break;
+         case Escape:
+            switch (n) {
+            case '\[':
+               state = CSI;
+               break;
+            default:
+               output(Bell);
+               state = 0;
+               break;
+            }
+            break;
+         case CSI:
+            switch (n) {
+            case 'A':
+               previous_line();
+               break;
+            case 'B':
+               next_line();
+               break;
+            case 'C':
+               forward_char();
+               break;
+            case 'D':
+               backward_char();
+               break;
+            default:
+               output(Bell);
+               break;
+            }
+            state = 0;
+            break;
          default:			// Normal data.
             state = 0;
             from--;			// Backup to current input character.
@@ -851,7 +882,13 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
                case Newline:
                   accept_input();
                   break;
-               default:
+               case Escape:
+                  state = Escape;
+                  break;
+               case CSI:
+                  state = CSI;
+                  break;
+               default:			// XXX Add : and ; rules!
                   insert_char(n);
                   break;
                }

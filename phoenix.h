@@ -81,7 +81,8 @@ enum Char {
    Bell = '\007', Backspace = '\010', Tab = '\t', Linefeed = '\n',
    Newline = '\n', Return = '\r', Space = ' ', Quote = '\"', Colon = ':',
    Semicolon = ';', Backslash = '\\', Underscore = '_', Delete = 127,
-   UnquotedUnderscore = 128		// unquoted underscore character in name
+   UnquotedUnderscore = 128,		// unquoted underscore character in name
+   CSI = 155
 };
 
 // Class declarations.
