@@ -19,6 +19,13 @@ void OutputStream::OutputObject::output(Telnet *telnet) // Output object.
    telnet->TimingMark();
 }
 
+void OutputStream::Attach(Telnet *telnet) // Review detached output.
+{
+   sent = NULL;
+   Acknowledged = Sent = 0;
+   while (telnet && telnet->acknowledge && SendNext(telnet)) ;
+}
+
 void OutputStream::Enqueue(Telnet *telnet, Output *out) // Enqueue output.
 {
    if (!out) return;

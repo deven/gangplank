@@ -37,6 +37,7 @@ Session::Session(Telnet *t)
    name_obj = NULL;			// No name object.
    SignalPublic = true;			// Default public signal on. (for now)
    SignalPrivate = true;		// Default private signal on.
+   SignedOn = false;			// No signed on yet.
 }
 
 Session::~Session()
@@ -46,21 +47,20 @@ Session::~Session()
 
 void Session::Close(bool drain)		// Close session.
 {
-   // Unlink session from list, remember if found.
+   // Unlink session from list.
    Pointer<Session> s = sessions;
-   int found = 0;
    if (sessions == this) {
       sessions = next;
-      found++;
    } else {
       while (s && s->next != this) s = s->next;
       if (s && s->next == this) {
          s->next = next;
-         found++;
       }
    }
 
-   if (found) NotifyExit();		// Notify and log exit if session found.
+   if (SignedOn) NotifyExit();		// Notify and log exit if signed on.
+
+   SignedOn = false;
 
    if (telnet) {
       Pointer<Telnet> t = telnet;
@@ -69,6 +69,34 @@ void Session::Close(bool drain)		// Close session.
    }
 
    user = NULL;
+}
+
+void Session::Attach(Telnet *t)		// Attach session to telnet connection.
+{
+   if (t) {
+      telnet = t;
+      telnet->session = this;
+      log_message("Attach: %s (%s) on fd #%d.", name_only, user->user, telnet->fd);
+      EnqueueOthers(new AttachNotify(name_obj));
+      Pending.Attach(telnet);
+   }
+}
+
+void Session::Detach(bool intentional)	// Detach session from connection.
+{
+   if (SignedOn && telnet) {
+      if (intentional) {
+         log_message("Detach: %s (%s) on fd #%d. (intentional)", name_only, user->user,
+             telnet->fd);
+      } else {
+         log_message("Detach: %s (%s) on fd #%d. (accidental)", name_only, user->user,
+             telnet->fd);
+      }
+      EnqueueOthers(new DetachNotify(name_obj, intentional));
+      telnet = NULL;
+   } else {
+      Close();
+   }
 }
 
 void Session::SaveInputLine(const char *line)
@@ -231,6 +259,22 @@ void Session::DoName(const char *line)	// Process response to name prompt.
       strncpy(name_only, line, NameLen); // Save user's name.
       name_only[NameLen - 1] = 0;
    }
+   Session *session;
+   for (session = sessions; session; session = session->next) {
+      if (!strcasecmp(session->name_only, name_only)) {
+         if (!strcmp(session->user->user, user->user) && !session->telnet) {
+            telnet->output("Re-attaching to detached session...\n");
+            session->Attach(telnet);
+            telnet = NULL;
+            Close();
+            return;
+         } else {
+            telnet->output("That name is already in use.  Choose another.\n");
+            telnet->Prompt("Enter name: ");
+            return;
+         }
+      }
+   }
    telnet->Prompt("Enter blurb: ");	// Prompt for blurb.
    SetInputFunction(&Session::Blurb);	// Set blurb input routine.
 }
@@ -245,6 +289,8 @@ void Session::Blurb(const char *line)	// Process response to blurb prompt.
       telnet->Prompt("Enter blurb: ");	// Prompt for blurb.
       return;
    }
+
+   SignedOn = true;			// Session is signed on.
 
    NotifyEntry();			// Notify other users of entry.
 
@@ -464,6 +510,8 @@ void Session::DoBye()			// Do /bye command.
 
 void Session::DoDetach()		// Do /detach command.
 {
+   output("You have been detached.\n");
+   EnqueueOutput();
    if (telnet) telnet->Close();		// Drain connection, then close.
 }
 

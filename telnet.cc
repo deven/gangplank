@@ -358,11 +358,9 @@ void Telnet::Close(bool drain)		// Close telnet connection.
 
 void Telnet::Closed()			// Connection is closed.
 {
-   if (session->telnet) {
-      session->telnet = NULL;		// Detach associated session.
-      log_message("Detach: %s (%s) on fd #%d.", session->name_only,
-                  session->user->user, fd);
-   }
+   // Detach associated session.
+   if (session) session->Detach(closing);
+   session = NULL;
 
    // Free input line buffer.
    if (data) delete data;

@@ -35,3 +35,20 @@ void ExitNotify::output(Telnet *telnet)
    telnet->print("*** %s has left Phoenix! [%s] ***\n", name->name,
                  date(time, 11, 5));
 }
+
+void AttachNotify::output(Telnet *telnet)
+{
+   telnet->print("*** %s is now attached. [%s] ***\n", name->name,
+                 date(time, 11, 5));
+}
+
+void DetachNotify::output(Telnet *telnet)
+{
+   if (intentional) {
+      telnet->print("*** %s has intentionally detached. [%s] ***\n",
+                    name->name, date(time, 11, 5));
+   } else {
+      telnet->print("*** %s has accidentally detached. [%s] ***\n",
+                    name->name, date(time, 11, 5));
+   }
+}

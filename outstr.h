@@ -49,6 +49,7 @@ public:
    void Acknowledge() {			// Acknowledge a block of output.
       if (Acknowledged < Sent) Acknowledged++;
    }
+   void Attach(Telnet *telnet);
    void Enqueue(Telnet *telnet, Output *out);
    void Dequeue();
    bool SendNext(Telnet *telnet);
