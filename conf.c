@@ -1663,6 +1663,7 @@ int main(int argc, char **argv)		/* main program */
    connections = NULL;
    sessions = NULL;
    free_blocks = NULL;
+   if (chdir(HOME)) error(HOME);
    open_log();
    nfds = getdtablesize();
    lfd = listen_on(PORT, BACKLOG);

@@ -40,6 +40,16 @@
 #define NAMELEN 33
 #define PORT 6789
 
+/* Location of server binary. */
+#ifndef SERVER_PATH
+#define SERVER_PATH "/usr/local/bin/conf"
+#endif
+
+/* Home directory for server to run in. */
+#ifndef HOME
+#define HOME "/usr/local/lib/conf"
+#endif
+
 /* Special codes. */
 #define UNQUOTED_UNDERSCORE 128
 
