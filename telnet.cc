@@ -549,6 +549,24 @@ inline void Telnet::delete_char()	// Delete character at point.
    }
 }
 
+inline void Telnet::transpose_chars()	// Exchange two characters at point.
+{
+   if (!Point() || End() < 2) {
+      output(Bell);
+   } else {
+      if (AtEnd()) backward_char();
+      char tmp = point[0];
+      point[0] = point[-1];
+      point[-1] = tmp;
+      if (echo == TelnetEnabled && do_echo) {
+         output(Backspace);
+         output(point[-1]);
+         output(point[0]);
+      }
+      point++;
+   }
+}
+
 void Telnet::InputReady(int fd)		// Telnet stream can input data.
 {
    Block *block;
@@ -799,6 +817,9 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
                case ControlL:
                   UndrawInput();
                   RedrawInput();
+                  break;
+               case ControlT:
+                  transpose_chars();
                   break;
                case Return:
                   state = Return;

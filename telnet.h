@@ -135,6 +135,7 @@ public:
    void backward_char();		// Move point backward one character.
    void erase_char();			// Erase input character before point.
    void delete_char();			// Delete character at point.
+   void transpose_chars();		// Transpose characters at point.
    void InputReady(int fd);		// Telnet stream can input data.
    void OutputReady(int fd);		// Telnet stream can output data.
 };
