@@ -18,8 +18,6 @@
 
 // Listening socket (subclass of FD).
 class Listen: public FD {
-protected:
-   void RequestShutdown(int port);	// Connect to port, request shutdown.
 public:
    static void Open(int port);		// Open a listening port.
    Listen(int port);			// constructor

@@ -385,6 +385,8 @@ void Telnet::Closed()			// Connection is closed.
    close(fd);				// Close connection.
    NoReadSelect();			// Don't select closed connections!
    NoWriteSelect();
+   Command.~OutputBuffer();		// Destroy command output buffer.
+   Output.~OutputBuffer();		// Destroy data output buffer.
    fd = -1;				// Connection is closed.
 }
 
@@ -666,20 +668,6 @@ void Telnet::InputReady()		// Telnet stream can input data.
          switch (state) {
          case TelnetIAC:
             switch (n) {
-            case ShutdownCommand:
-               // Shutdown request.  Not a real telnet command.
-
-               // Acknowledge request.
-               command(TelnetIAC, ShutdownCommand);
-
-               // Initiate shutdown.
-               log_message("Shutdown requested by new server in 30 seconds.");
-               Session::announce("\a\a>>> A new server is starting.  This "
-                                "server will shutdown in 30 seconds... <<<"
-                                "\n\a\a");
-               alarm(30);
-               Shutdown = 1;
-               break;
             case TelnetAbortOutput:
                // Abort all output data.
                while (Output.head) {

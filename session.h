@@ -94,6 +94,7 @@ public:
    void NotifyEntry();			// Notify other users of entry and log.
    void NotifyExit();			// Notify other users of exit and log.
    int ResetIdle(int min);		// Reset/return idle time, maybe report.
+   void DoRestart(const char *args);	// Do !restart command.
    void DoDown(const char *args);	// Do !down command.
    void DoNuke(const char *args);	// Do !nuke command.
    void DoBye();			// Do /bye command.

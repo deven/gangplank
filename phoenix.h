@@ -115,6 +115,8 @@ const char *message_start(const char *line, char *sendlist, int len,
 int match_name(const char *name, const char *sendlist);
 void quit(int sig);
 void alrm(int sig);
+void RestartServer();
+void ShutdownServer();
 int main(int argc, char **argv);
 
 // Global variables.

@@ -20,7 +20,6 @@
 
 // Telnet commands.
 enum TelnetCommand {
-   ShutdownCommand = 24,		// Not a real telnet command!
    TelnetSubnegotiationEnd = 240,
    TelnetNOP = 241,
    TelnetDataMark = 242,

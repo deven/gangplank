@@ -219,19 +219,41 @@ void quit(int sig)			// received SIGQUIT or SIGTERM
 void alrm(int sig)			// received SIGALRM
 {
    // Ignore unless shutting down.
-   if (Shutdown) {
-      if (Shutdown == 1) {
-         log_message("Final shutdown warning.");
-         Session::announce("\a\a>>> Server shutting down NOW!  Goodbye. <<<"
-                          "\n\a\a");
-         alarm(5);
-         Shutdown++;
-      } else {
-         log_message("Server down.");
-         if (logfile) fclose(logfile);
-         exit(0);
-      }
+   switch (Shutdown) {
+   case 1:
+      log_message("Final shutdown warning.");
+      Session::announce("\a\a>>> Server shutting down NOW!  Goodbye. <<<\n"
+                        "\a\a");
+      alarm(5);
+      Shutdown++;
+      break;
+   case 2:
+      ShutdownServer();
+   case 3:
+      log_message("Final restart warning.");
+      Session::announce("\a\a>>> Server restarting NOW!  Goodbye. <<<\n\a\a");
+      alarm(5);
+      Shutdown++;
+      break;
+    case 4:
+      RestartServer();
    }
+}
+
+void RestartServer()			// Restart server.
+{
+   log_message("Restarting server.");
+   if (logfile) fclose(logfile);
+   FD::CloseAll();
+   execl("conf", "conf", NULL);
+   error("conf");
+}
+
+void ShutdownServer()			// Shutdown server.
+{
+   log_message("Server down.");
+   if (logfile) fclose(logfile);
+   exit(0);
 }
 
 int main(int argc, char **argv)		// main program
