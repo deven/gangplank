@@ -48,7 +48,8 @@ Session::~Session()
 void Session::Close(bool drain)		// Close session.
 {
    // Unlink session from list.
-   Pointer<Session> s = sessions;
+   Pointer<Session> s(sessions);
+
    if (sessions == this) {
       sessions = next;
    } else {
@@ -63,7 +64,7 @@ void Session::Close(bool drain)		// Close session.
    SignedOn = false;
 
    if (telnet) {
-      Pointer<Telnet> t = telnet;
+      Pointer<Telnet> t(telnet);
       telnet = NULL;
       t->Close(drain);			// Close connection.
    }

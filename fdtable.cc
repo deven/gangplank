@@ -40,7 +40,7 @@ FDTable::~FDTable()			// destructor
 
 void FDTable::OpenListen(int port)	// Open a listening port.
 {
-   Pointer<Listen> l = new Listen(port);
+   Pointer<Listen> l(new Listen(port));
    if (l->fd == -1) return;
    if (l->fd >= used) used = l->fd + 1;
    array[l->fd] = l;
@@ -49,7 +49,7 @@ void FDTable::OpenListen(int port)	// Open a listening port.
 
 void FDTable::OpenTelnet(int lfd)	// Open a telnet connection.
 {
-   Pointer<Telnet> t = new Telnet(lfd);
+   Pointer<Telnet> t(new Telnet(lfd));
    if (t->fd == -1) return;
    if (t->fd >= used) used = t->fd + 1;
    array[t->fd] = t;
@@ -58,7 +58,7 @@ void FDTable::OpenTelnet(int lfd)	// Open a telnet connection.
 Pointer<FD> FDTable::Closed(int fd)	// Close fd, return FD object pointer.
 {
    if (fd < 0 || fd >= used) return NULL;
-   Pointer<FD> FD = array[fd];
+   Pointer<FD> FD(array[fd]);
    array[fd] = NULL;
    if (fd == used - 1) {		// Fix highest used index if necessary.
       while (used > 0) {
