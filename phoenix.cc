@@ -525,6 +525,8 @@ void process_input(Telnet *telnet, const char *line)
             telnet->print("Your default sendlist is now set to \"%s\".\n",
                   telnet->session->default_sendlist);
          }
+      } else if (!strncmp(line, "/why", 4)) {
+         telnet->output("Why not?\n");
       } else if (!strncmp(line, "/blurb", 3)) {
          const char *start = line, *end;
          int len = NameLen - strlen(telnet->session->name_only) - 4;
@@ -568,7 +570,8 @@ void process_input(Telnet *telnet, const char *line)
                         "/help -- gives this thrilling message\n"
                         "/send -- specify default sendlist\n"
                         "/who -- gives a list of who is connected\n"
-                        "No other /commands are implemented yet.\n\n"
+                        "No other /commands are implemented yet. "
+                        "(except /why)\n\n"
                         "There are two ways to specify a user to send a "
                         "private message.  You can use\n"
                         "either a '#' and the fd number for the user, (as "
