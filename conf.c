@@ -26,6 +26,20 @@ static char buf[BUFSIZE];		/* temporary buffer */
 static char inbuf[BUFSIZE];		/* input buffer */
 static struct block *free_blocks;	/* free blocks */
 
+#ifdef NEED_STRERROR
+char *strerror(int err)
+{
+   static char msg[32];
+
+   if (err >= 0 && err < sys_nerr) {
+      return sys_errlist[err];
+   } else {
+      sprintf(msg, "Error %d", err);
+      return msg;
+   }
+}
+#endif
+
 const char *date(time_t clock, int start, int len) /* get part of date string */
 {
    static char buf[32];
