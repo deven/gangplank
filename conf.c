@@ -868,6 +868,12 @@ void process_input(struct telnet *telnet, const char *line)
          /* Unknown /command. */
          output(telnet, "Unknown /command.  Type /help for help.\n");
       }
+   } else if (!strcmp(line, " ")) {
+      int idle;
+
+      idle = (time(NULL) - telnet->session->idle_since) / 60;
+      time(&telnet->session->idle_since); /* reset idle time */
+      if (idle) print(telnet, "Your idle time has been reset.\n");
    } else if (*line) {
       int is_explicit;
       int i;
