@@ -259,11 +259,14 @@ void ShutdownServer()			// Shutdown server.
 int main(int argc, char **argv)		// main program
 {
    int pid;				// server process number
+   int port;				// TCP port to use
 
    Shutdown = 0;
    if (chdir(HOME)) error(HOME);
    OpenLog();
-   Listen::Open(Port);
+   port = argc > 1 ? atoi(argv[1]) : 0;
+   if (!port) port = DefaultPort;
+   Listen::Open(port);
 
    // fork subprocess and exit parent
    if (argc < 2 || strcmp(argv[1], "-debug")) {
@@ -282,7 +285,7 @@ int main(int argc, char **argv)		// main program
          signal(SIGQUIT, quit);
          signal(SIGTERM, quit);
          signal(SIGALRM, alrm);
-         log_message("Server started, running on port %d. (pid %d)", Port,
+         log_message("Server started, running on port %d. (pid %d)", port,
                      getpid());
          break;
       case -1:
@@ -290,10 +293,13 @@ int main(int argc, char **argv)		// main program
          break;
       default:
          fprintf(stderr, "Server started, running on port %d. (pid %d)\n",
-                 Port, pid);
+                 port, pid);
          exit(0);
          break;
       }
+   } else {
+      log_message("Server started, running on port %d. (pid %d)", port,
+                  getpid());
    }
 
    while(1) {
