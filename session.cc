@@ -440,7 +440,7 @@ void Session::DoNuke(const char *args)	// Do !nuke command.
    Telnet *telnet;
    int matches = 0;
 
-   if ((drain = bool(*args == '!'))) args++;
+   if (!(drain = bool(*args != '!'))) args++;
 
    if (!strcasecmp(args, "me")) {
       target = this;
@@ -491,8 +491,8 @@ void Session::DoNuke(const char *args)	// Do !nuke command.
       telnet = target->telnet;
       target->telnet = NULL;
       log_message("%s (%s) on fd #%d has been nuked by %s (%s).",
-                  target->name_only, target->user->user, target->telnet->fd,
-                  name_only, user->user);
+                  target->name_only, target->user->user, telnet->fd, name_only,
+                  user->user);
       telnet->UndrawInput();
       telnet->print("\a\a\a*** You have been nuked by %s. ***\n", name);
       telnet->RedrawInput();
@@ -500,6 +500,7 @@ void Session::DoNuke(const char *args)	// Do !nuke command.
    } else {
       log_message("%s (%s), detached, has been nuked by %s (%s).",
                   target->name_only, target->user->user, name_only, user->user);
+      target->Close();
    }
 }
 
