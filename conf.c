@@ -254,7 +254,7 @@ void print(struct telnet *telnet, const char *format, ...) /* formatted write */
    output(telnet, buf);
 }
 
-void announce(const char *format, ...)	/* formatted write to all users */
+void announce(const char *format, ...)	/* formatted write to all connections */
 {
    struct telnet *telnet;
    va_list ap;
@@ -266,6 +266,21 @@ void announce(const char *format, ...)	/* formatted write to all users */
       undraw_line(telnet);		/* undraw input line */
       output(telnet, buf);
       redraw_line(telnet);		/* redraw input line */
+   }
+}
+
+void notify(const char *format, ...)	/* formatted write to all sessions */
+{
+   struct session *session;
+   va_list ap;
+
+   va_start(ap, format);
+   (void) vsprintf(buf, format, ap);
+   va_end(ap);
+   for (session = sessions; session; session = session->next) {
+      undraw_line(session->telnet);	/* undraw input line */
+      output(session->telnet, buf);
+      redraw_line(session->telnet);	/* redraw input line */
    }
 }
 
@@ -686,8 +701,8 @@ void name(struct telnet *telnet, const char *line)
    }
 
    /* Announce entry. */
-   announce("*** %s has entered conf! [%s] ***\n", telnet->session->name,
-            date(time(&telnet->session->login_time), 11, 5));
+   notify("*** %s has entered conf! [%s] ***\n", telnet->session->name,
+          date(time(&telnet->session->login_time), 11, 5));
    telnet->session->idle_since = telnet->session->login_time;
    log_message("Enter: %s (%s) on fd #%d.", telnet->session->name,
                telnet->session->user->user, telnet->fd);
@@ -1118,8 +1133,8 @@ void close_connection(struct telnet *telnet)
       telnet2->next = telnet->next;
    }
    if (strcmp(telnet->session->name, "[logging in]")) {
-      announce("*** %s has left conf! [%s] ***\n", telnet->session->name,
-               date(0, 11, 5));
+      notify("*** %s has left conf! [%s] ***\n", telnet->session->name,
+             date(0, 11, 5));
       log_message("Exit: %s (%s) on fd #%d.", telnet->session->name,
                   telnet->session->user->user, telnet->fd);
    }

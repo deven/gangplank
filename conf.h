@@ -191,6 +191,7 @@ void set_input_function(struct telnet *telnet, input_func_ptr input);
 void output(struct telnet *telnet, const char *buf);
 void print(struct telnet *telnet, const char *format, ...);
 void announce(const char *format, ...);
+void notify(const char *format, ...);
 void put_command(struct telnet *telnet, int cmd);
 const char *message_start(const char *line, char *sendlist, int len,
                           int *is_explicit);
