@@ -69,6 +69,9 @@ const int Port = 6789;			// TCP port to run on
 #define true (1)
 #endif
 
+// Types of messages.
+enum MessageType {Public, Private};
+
 // Character codes.
 enum Char {
    Null, ControlA, ControlB, ControlC, ControlD, ControlE, ControlF, ControlG,

@@ -118,6 +118,8 @@ public:
    void RedrawInput();			// Redraw input line on screen.
    void OutputWithRedraw(const char *buf); // queue output w/redraw
    void PrintWithRedraw(const char *format, ...); // format output w/redraw
+   void PrintMessage(MessageType type, const char *from, const char *reply_to,
+                     const char *to, const char *msg); // Print user message.
    void set_echo(CallbackFuncPtr callback, int state); // Set local ECHO option.
    void set_LSGA(CallbackFuncPtr callback, int state); // Set local SGA option.
    void set_RSGA(CallbackFuncPtr callback, int state); // Set remote SGA option.

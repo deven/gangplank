@@ -27,6 +27,7 @@ public:
    char blurb[NameLen];			// current user blurb
    char default_sendlist[SendlistLen];	// current default sendlist
    char last_sendlist[SendlistLen];	// last explicit sendlist
+   char reply_sendlist[SendlistLen];	// reply sendlist for last sender
 
    Session(Telnet *t);			// constructor
    ~Session();				// destructor

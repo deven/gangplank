@@ -26,6 +26,7 @@ Session::Session(Telnet *t)
 
    strcpy(default_sendlist, "everyone"); // Default sendlist is "everyone".
    last_sendlist[0] = 0;		// No previous sendlist yet.
+   reply_sendlist[0] = 0;		// No reply sendlist yet.
    login_time = time(&now);		// Not logged in yet.
    idle_since = now;			// Reset idle time.
 
