@@ -86,9 +86,6 @@ public:
    CallbackFuncPtr LSGA_callback;	// SUPPRESS-GO-AHEAD callback (local)
    CallbackFuncPtr RSGA_callback;	// SUPPRESS-GO-AHEAD callback (remote)
 
-   // Send announcement to everyone.  (Formatted write to all connections.)
-   static void announce(const char *format, ...);
-
    // Nuke a user (force close connection).
    static void nuke(Telnet *telnet, int fd, bool drain);
 

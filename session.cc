@@ -122,6 +122,21 @@ void Session::print(const char *format, ...) // formatted write
    output(buf);
 }
 
+void Session::announce(const char *format, ...) // print to all sessions
+{
+   Session *session;
+   char buf[BufSize];
+   va_list ap;
+
+   va_start(ap, format);
+   (void) vsprintf(buf, format, ap);
+   va_end(ap);
+   for (session = sessions; session; session = session->next) {
+      session->output(buf);
+      session->EnqueueOutput();
+   }
+}
+
 void Session::Login(const char *line)	// Process response to login prompt.
 {
    if (!strcasecmp(line, "/bye")) {
@@ -346,8 +361,8 @@ void Session::DoDown(const char *args)	// Do !down command.
       log_message("Immediate shutdown requested by %s (%s).", name_only,
                   user->user);
       log_message("Final shutdown warning.");
-      Telnet::announce("*** %s has shut down Phoenix! ***\n", name);
-      Telnet::announce("\a\a>>> Server shutting down NOW!  Goodbye. <<<\n\a\a");
+      announce("*** %s has shut down Phoenix! ***\n", name);
+      announce("\a\a>>> Server shutting down NOW!  Goodbye. <<<\n\a\a");
       alarm(5);
       Shutdown = 2;
    } else if (!strcasecmp(args, "cancel")) {
@@ -355,8 +370,7 @@ void Session::DoDown(const char *args)	// Do !down command.
          Shutdown = 0;
          alarm(0);
          log_message("Shutdown cancelled by %s (%s).", name_only, user->user);
-         Telnet::announce("*** %s has cancelled the server shutdown. ***\n",
-                          name);
+         announce("*** %s has cancelled the server shutdown. ***\n", name);
       } else {
          output("The server was not about to shut down.\n");
       }
@@ -365,9 +379,9 @@ void Session::DoDown(const char *args)	// Do !down command.
       if (sscanf(args, "%d", &seconds) != 1) seconds = 30;
       log_message("Shutdown requested by %s (%s) in %d seconds.", name_only,
                   user->user, seconds);
-      Telnet::announce("*** %s has shut down Phoenix! ***\n", name);
-      Telnet::announce("\a\a>>> This server will shutdown in %d seconds... "
-                       "<<<\n\a\a", seconds);
+      announce("*** %s has shut down Phoenix! ***\n", name);
+      announce("\a\a>>> This server will shutdown in %d seconds... <<<\n\a\a",
+               seconds);
       alarm(seconds);
       Shutdown = 1;
    }

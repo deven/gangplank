@@ -128,19 +128,6 @@ void FDTable::OutputReady(int fd)	// Output ready on file descriptor fd.
    array[fd]->OutputReady(fd);
 }
 
-// Unformatted write to all connections.
-void FDTable::announce(const char *buf)
-{
-   for (int i = 0; i < used; i++) {
-      if (array[i] && array[i]->type == TelnetFD) {
-         Telnet *t = (Telnet *) (FD *) array[i];
-         t->UndrawInput();
-         t->output(buf);
-         t->RedrawInput();
-      }
-   }
-}
-
 // Nuke a user (force close connection).
 void FDTable::nuke(Telnet *telnet, int fd, bool drain)
 {

@@ -223,7 +223,7 @@ int match_name(const char *name, const char *sendlist)
 void quit(int sig)			// received SIGQUIT or SIGTERM
 {
    log_message("Shutdown requested by signal in 30 seconds.");
-   Telnet::announce("\a\a>>> This server will shutdown in 30 seconds... <<<"
+   Session::announce("\a\a>>> This server will shutdown in 30 seconds... <<<"
                     "\n\a\a");
    alarm(30);
    Shutdown = 1;
@@ -235,7 +235,7 @@ void alrm(int sig)			// received SIGALRM
    if (Shutdown) {
       if (Shutdown == 1) {
          log_message("Final shutdown warning.");
-         Telnet::announce("\a\a>>> Server shutting down NOW!  Goodbye. <<<"
+         Session::announce("\a\a>>> Server shutting down NOW!  Goodbye. <<<"
                           "\n\a\a");
          alarm(5);
          Shutdown++;

@@ -33,7 +33,6 @@ public:
    void Select();			// Select across all ready connections.
    void InputReady(int fd);		// Input ready on file descriptor fd.
    void OutputReady(int fd);		// Output ready on file descriptor fd.
-   void announce(const char *buf);	// Unformatted write to all connections.
 
    // Select fd for reading.
    void ReadSelect(int fd) {

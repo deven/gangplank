@@ -15,18 +15,6 @@
 #include "telnet.h"
 #include "user.h"
 
-// Formatted write to all connections.
-void Telnet::announce(const char *format, ...)
-{
-   char buf[BufSize];
-   va_list ap;
-
-   va_start(ap, format);
-   (void) vsprintf(buf, format, ap);
-   va_end(ap);
-   fdtable.announce(buf);
-}
-
 void Telnet::nuke(Telnet *telnet, int fd, bool drain)
 {
    fdtable.nuke(telnet, fd, drain);
@@ -681,8 +669,9 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
 
                // Initiate shutdown.
                log_message("Shutdown requested by new server in 30 seconds.");
-               announce("\a\a>>> A new server is starting.  This server will "
-                        "shutdown in 30 seconds... <<<\n\a\a");
+               Session::announce("\a\a>>> A new server is starting.  This "
+                                "server will shutdown in 30 seconds... <<<"
+                                "\n\a\a");
                alarm(30);
                Shutdown = 1;
                break;
