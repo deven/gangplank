@@ -804,6 +804,12 @@ void Telnet::InputReady(int fd)		// Telnet stream can input data.
             case '\[':
                state = CSI;
                break;
+            case ControlL:
+               UndrawInput();
+               output("\033[H\033[J");	// XXX ANSI!
+               RedrawInput();
+               state = 0;
+               break;
             default:
                output(Bell);
                state = 0;
