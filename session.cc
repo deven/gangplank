@@ -605,9 +605,7 @@ void Session::DoHelp()			// Do /help command.
           "Any other line not beginning with a slash is simply sent to "
           "everyone.\n\n"
           "The following are recognized as smileys instead of as sendlists:"
-          "\n\n"
-          "\t:-) :-( :-P ;-) :_) :_( :) :( :P ;) (-: )-: (-; (_: )_: (: ): (;"
-          "\n\n");
+          "\n\n\t:-) :-( :-P ;-) :_) :_( :) :( :P ;)\n\n");
 }
 
 void Session::DoReset()			// Do <space><return> idle time reset.

@@ -129,11 +129,7 @@ const char *message_start(const char *line, char *sendlist, int len,
           !strncmp(line, ":-P", i) || !strncmp(line, ";-)", i) ||
           !strncmp(line, ":_)", i) || !strncmp(line, ":_(", i) ||
           !strncmp(line, ":)",  i) || !strncmp(line, ":(",  i) ||
-          !strncmp(line, ":P",  i) || !strncmp(line, ";)",  i) ||
-          !strncmp(line, "(-:", i) || !strncmp(line, ")-:", i) ||
-          !strncmp(line, "(-;", i) || !strncmp(line, "(_:", i) ||
-          !strncmp(line, ")_:", i) || !strncmp(line, "(:",  i) ||
-          !strncmp(line, "):",  i) || !strncmp(line, "(;",  i)) {
+          !strncmp(line, ":P",  i) || !strncmp(line, ";)",  i)) {
          strcpy(sendlist, "default");
          return line;
       }
