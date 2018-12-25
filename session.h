@@ -73,7 +73,7 @@ public:
    void AcknowledgeOutput(void) {	// Output acknowledgement.
       Pending.Acknowledge();
    }
-   bool OutputNext(Telnet *telnet) {	// Output next output block to Telnet.
+   bool OutputNext(Telnet *telnet) {	// Output next output block.
       return Pending.SendNext(telnet);
    }
 

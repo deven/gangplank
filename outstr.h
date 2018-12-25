@@ -51,11 +51,11 @@ public:
       sent = tail = NULL;
       Acknowledged = Sent = 0;
    }
-   void Acknowledge(void) {		// Acknowledge a block of output.
+   void Acknowledge() {			// Acknowledge a block of output.
       if (Acknowledged < Sent) Acknowledged++;
    }
    void Enqueue(Telnet *telnet, Output *out);
-   void Dequeue(void);
+   void Dequeue();
    bool SendNext(Telnet *telnet);
 };
 
