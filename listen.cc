@@ -65,6 +65,7 @@ Listen::Listen(int port)		// Listen on a port.
          break;
       }
    }
+
    if (listen(fd, Backlog)) error("Listen::Listen(): listen()");
 }
 

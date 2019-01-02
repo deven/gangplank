@@ -27,9 +27,9 @@ public:
    FDType type;				// type of file descriptor
    int fd;				// file descriptor
 
-   static void Select() {		// Select across all ready connections.
-      fdtable.Select();
-   }
+   // Select across all ready connections.
+   static void Select() { fdtable.Select(); }
+
    virtual void InputReady() = 0;	// Input ready on file descriptor fd.
    virtual void OutputReady() = 0;	// Output ready on file descriptor fd.
    virtual void Closed() = 0;		// Connection is closed.

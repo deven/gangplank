@@ -76,7 +76,8 @@ void Session::Attach(Telnet *t)		// Attach session to telnet connection.
    if (t) {
       telnet = t;
       telnet->session = this;
-      log_message("Attach: %s (%s) on fd #%d.", name_only, user->user, telnet->fd);
+      log_message("Attach: %s (%s) on fd #%d.", name_only, user->user,
+                  telnet->fd);
       EnqueueOthers(new AttachNotify(name_obj));
       Pending.Attach(telnet);
       output("*** End of reviewed output. ***\n");
@@ -88,11 +89,11 @@ void Session::Detach(bool intentional)	// Detach session from connection.
 {
    if (SignedOn && telnet) {
       if (intentional) {
-         log_message("Detach: %s (%s) on fd #%d. (intentional)", name_only, user->user,
-             telnet->fd);
+         log_message("Detach: %s (%s) on fd #%d. (intentional)", name_only,
+                     user->user, telnet->fd);
       } else {
-         log_message("Detach: %s (%s) on fd #%d. (accidental)", name_only, user->user,
-             telnet->fd);
+         log_message("Detach: %s (%s) on fd #%d. (accidental)", name_only,
+                     user->user, telnet->fd);
       }
       EnqueueOthers(new DetachNotify(name_obj, intentional));
       telnet = NULL;
