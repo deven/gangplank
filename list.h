@@ -86,11 +86,11 @@ Pointer<Type> List<Type>::RemHead() {
    count--;
    head = node->next;
    if (head) {
-      head->prev = 0;
+      head->prev = NULL;
    } else {
-      tail = 0;
+      tail = NULL;
    }
-   node->next = node->prev = 0;
+   node->next = node->prev = NULL;
    return node->obj;
 }
 
@@ -101,11 +101,11 @@ Pointer<Type> List<Type>::RemTail() {
    count--;
    tail = node->prev;
    if (tail) {
-      tail->next = 0;
+      tail->next = NULL;
    } else {
-      head = 0;
+      head = NULL;
    }
-   node->next = node->prev = 0;
+   node->next = node->prev = NULL;
    return node->obj;
 }
 
@@ -120,11 +120,11 @@ public:
    ListIter() { }
    ListIter(ListType &l): list(&l) { }
    ListIter(ListType *l): list(l) { }
-   ListIter &operator =(ListType &l) { list = &l; ptr = 0; }
-   ListIter &operator =(ListType *l) { list = l; ptr = 0; }
+   ListIter &operator =(ListType &l) { list = &l; ptr = NULL; }
+   ListIter &operator =(ListType *l) { list = l; ptr = NULL; }
    Type *operator ->() { return ptr ? ptr->obj : NULL; }
    operator Type *()   { return ptr ? ptr->obj : NULL; }
-   operator int() { return ptr != 0; }
+   operator int() { return ptr != NULL; }
    Type *operator --() { ptr = ptr ? ptr->prev : list->tail; return *this; }
    Type *operator ++() { ptr = ptr ? ptr->next : list->head; return *this; }
    Type *operator --(int) { ListIter<Type> *t = this; this->operator --(); return *t; }
@@ -144,7 +144,7 @@ Pointer<Type> ListIter<Type>::Remove() {
    list->count--;
    node->prev->next = node->next;
    node->next->prev = node->prev;
-   node->next = node->prev = 0;
+   node->next = node->prev = NULL;
    return node->obj;
 }
 
